@@ -13,6 +13,7 @@ import {
 } from "@/lib/journey-store";
 import { useIdWallet, stepFulfilledByWallet } from "@/lib/id-wallet";
 import { eventSupportsApplyAll } from "@/lib/journey-features";
+import { useT } from "@/lib/i18n";
 import { JourneyView } from "./JourneyView";
 import { ApplyAllPrompt } from "./ApplyAllPrompt";
 import { ApplyAllModal } from "./ApplyAllModal";
@@ -25,6 +26,7 @@ import { ApplyAllModal } from "./ApplyAllModal";
  */
 export function JourneyScreen({ eventId }: { eventId?: string }) {
   const router = useRouter();
+  const t = useT();
   const [journey, setJourney] = useState<Journey | null>(null);
   const [ready, setReady] = useState(false);
   // Tracks the graduate's "Apply All / No" decision for this session.
@@ -122,7 +124,7 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
   if (!ready || !walletReady) {
     return (
       <main className="flex flex-1 items-center justify-center px-6 text-muted">
-        Loading…
+        {t("Loading…")}
       </main>
     );
   }
@@ -130,13 +132,13 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
   if (!journey) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <h1 className="text-xl font-bold text-egov-navy">No active journey</h1>
-        <p className="text-muted">Pumili ng life event para magsimula.</p>
+        <h1 className="text-xl font-bold text-egov-navy">{t("No active journey")}</h1>
+        <p className="text-muted">{t("Choose a life event to start.")}</p>
         <Link
           href="/ehakbang"
           className="min-h-11 rounded-egov bg-egov-blue px-5 py-2.5 font-semibold text-white"
         >
-          Start a New Journey
+          {t("Start a New Journey")}
         </Link>
       </main>
     );
@@ -149,13 +151,13 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
           <span aria-hidden>🪪</span>
           <p>
             {walletStepNumbers.length} step
-            {walletStepNumbers.length === 1 ? "" : "s"} auto-completed mula sa
-            iyong{" "}
+            {walletStepNumbers.length === 1 ? "" : "s"}{" "}
+            {t("auto-completed from your")}{" "}
             <Link
               href="/wallet"
               className="font-semibold underline underline-offset-2"
             >
-              ID Wallet
+              {t("ID Wallet")}
             </Link>
             .
           </p>
@@ -181,14 +183,14 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
       {allDone && (
         <div className="sticky bottom-0 z-20 border-t border-border bg-surface/95 px-5 py-4 backdrop-blur">
           <p className="mb-2 text-center text-sm font-semibold text-egov-success">
-            Kumpleto na ang lahat ng hakbang! 🎉
+            {t("All steps complete! 🎉")}
           </p>
           <button
             type="button"
             onClick={handleFinish}
             className="min-h-12 w-full rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
           >
-            Tapusin ang journey
+            {t("Finish journey")}
           </button>
         </div>
       )}

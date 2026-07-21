@@ -42,12 +42,14 @@ describe("getVerificationCopy", () => {
 
   it("returns address-specific copy for the moved event", () => {
     expect(getVerificationCopy("moved-residence").documentTitle).toMatch(
-      /tirahan/i,
+      /residence/i,
     );
   });
 
   it("returns job-specific copy for the first-job event", () => {
-    expect(getVerificationCopy("first-job").documentTitle).toMatch(/trabaho/i);
+    expect(getVerificationCopy("first-job").documentTitle).toMatch(
+      /employment/i,
+    );
   });
 
   it("falls back to generic copy for unknown / missing ids", () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 /**
  * Collapsible "Ask about this step" section (PRD FR-12). UI stub for the
@@ -8,6 +9,7 @@ import { useId, useState } from "react";
  * The real Claude call (with step context) is wired in later.
  */
 export function AskAboutStep({ stepTitle }: { stepTitle: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [asked, setAsked] = useState(false);
@@ -22,7 +24,7 @@ export function AskAboutStep({ stepTitle }: { stepTitle: string }) {
         aria-controls={panelId}
         className="flex w-full items-center justify-between text-sm font-semibold text-egov-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
       >
-        Ask about this step
+        {t("Ask about this step")}
         <span aria-hidden className="text-lg leading-none">
           {open ? "−" : "+"}
         </span>
@@ -31,7 +33,7 @@ export function AskAboutStep({ stepTitle }: { stepTitle: string }) {
       {open && (
         <div id={panelId} className="mt-3 flex flex-col gap-2">
           <label htmlFor={`${panelId}-input`} className="sr-only">
-            Your question about {stepTitle}
+            {t("Your question about")} {stepTitle}
           </label>
           <textarea
             id={`${panelId}-input`}
@@ -41,7 +43,7 @@ export function AskAboutStep({ stepTitle }: { stepTitle: string }) {
               setAsked(false);
             }}
             rows={2}
-            placeholder="e.g. Kailangan ko ba ng appointment bago pumunta?"
+            placeholder={t("e.g. Kailangan ko ba ng appointment bago pumunta?")}
             className="w-full rounded-egov border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus-visible:border-egov-blue focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-egov-blue"
           />
           <button
@@ -50,12 +52,13 @@ export function AskAboutStep({ stepTitle }: { stepTitle: string }) {
             onClick={() => setAsked(true)}
             className="self-end rounded-full bg-egov-blue px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Send
+            {t("Send")}
           </button>
           {asked && (
             <p className="rounded-egov bg-egov-blue-050 px-3 py-2 text-sm text-egov-blue-dark">
-              Answers from eHakbang AI will appear here once connected. For now,
-              please refer to the official service page above.
+              {t(
+                "Answers from eHakbang AI will appear here once connected. For now, please refer to the official service page above.",
+              )}
             </p>
           )}
         </div>

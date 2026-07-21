@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { DemoDataReset } from "@/components/DemoDataReset";
+import { LanguageProvider } from "@/lib/i18n";
 import { SERVER_SESSION_ID } from "@/lib/server-session";
 
 const geistSans = Geist({
@@ -42,7 +43,9 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <DemoDataReset serverSessionId={SERVER_SESSION_ID} />
-        <AppShell>{children}</AppShell>
+        <LanguageProvider>
+          <AppShell>{children}</AppShell>
+        </LanguageProvider>
       </body>
     </html>
   );

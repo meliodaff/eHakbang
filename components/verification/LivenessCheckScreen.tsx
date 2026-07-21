@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
 type Status = "idle" | "scanning" | "passed";
 
@@ -15,6 +16,7 @@ type Status = "idle" | "scanning" | "passed";
  */
 export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
   const router = useRouter();
+  const t = useT();
   const [status, setStatus] = useState<Status>("idle");
 
   const nextHref = eventId
@@ -30,13 +32,13 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
   return (
     <main className="flex flex-1 flex-col gap-5 px-6 py-6">
       <p className="text-xs font-semibold uppercase tracking-wide text-egov-blue">
-        Verification · Step 2 of 2
+        {t("Verification · Step 2 of 2")}
       </p>
 
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-bold text-egov-navy">Liveness check</h1>
+        <h1 className="text-xl font-bold text-egov-navy">{t("Liveness check")}</h1>
         <p className="text-muted">
-          I-verify na ikaw mismo ang gumagawa ng hakbang na ito.
+          {t("Verify that you are the one performing this step.")}
         </p>
       </div>
 
@@ -48,7 +50,7 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
           <>
             <span aria-hidden className="text-5xl">📷</span>
             <span className="text-muted">
-              Iharap ang mukha sa camera at pindutin ang &ldquo;Simulan&rdquo;.
+              {t("Face the camera and press “Start”.")}
             </span>
           </>
         )}
@@ -56,7 +58,7 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
           <>
             <span aria-hidden className="text-5xl motion-safe:animate-pulse">🔍</span>
             <span className="font-semibold text-egov-blue">
-              Sinusuri… huwag gumalaw.
+              {t("Scanning… please hold still.")}
             </span>
           </>
         )}
@@ -64,7 +66,7 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
           <>
             <span aria-hidden className="text-5xl">✅</span>
             <span className="font-semibold text-egov-success">
-              Na-verify ang pagkakakilanlan
+              {t("Identity verified")}
             </span>
           </>
         )}
@@ -72,8 +74,9 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
 
       <div className="mt-auto flex flex-col gap-3">
         <p className="rounded-egov bg-egov-warning-bg px-4 py-3 text-sm text-egov-warning">
-          Demo lang: walang camera o biometric na kinukuha. Awtomatikong pumapasa
-          ang check na ito.
+          {t(
+            "Demo only: no camera or biometric is captured. This check passes automatically.",
+          )}
         </p>
 
         {status !== "passed" ? (
@@ -83,7 +86,9 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
             onClick={startCheck}
             className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {status === "scanning" ? "Sinusuri…" : "Simulan ang liveness check"}
+            {status === "scanning"
+              ? t("Scanning… please hold still.")
+              : t("Start liveness check")}
           </button>
         ) : (
           <button
@@ -91,7 +96,7 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
             onClick={() => router.push(nextHref)}
             className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
           >
-            Ipagpatuloy ang journey
+            {t("Continue journey")}
           </button>
         )}
       </div>

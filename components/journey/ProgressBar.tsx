@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/i18n";
 
 /**
  * Sticky journey progress bar (PRD FR-07). Shows "X of Y steps complete",
@@ -12,16 +15,16 @@ export function ProgressBar({
   completed: number;
   total: number;
 }) {
+  const t = useT();
   const safeTotal = Math.max(total, 1);
   const percent = Math.round((completed / safeTotal) * 100);
   const isComplete = completed >= total && total > 0;
+  const label = `${completed} ${t("of")} ${total} ${t("steps complete")}`;
 
   return (
     <div className="sticky top-0 z-20 border-b border-border bg-surface/95 px-5 py-3 backdrop-blur">
       <div className="mb-1.5 flex items-center justify-between text-sm">
-        <span className="font-semibold text-foreground">
-          {completed} of {total} steps complete
-        </span>
+        <span className="font-semibold text-foreground">{label}</span>
         <span
           className={cn(
             "font-semibold",
@@ -37,7 +40,7 @@ export function ProgressBar({
         aria-valuenow={completed}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-label={`${completed} of ${total} steps complete`}
+        aria-label={label}
       >
         <div
           className={cn(

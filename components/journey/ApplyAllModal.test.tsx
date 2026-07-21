@@ -28,7 +28,7 @@ describe("ApplyAllModal", () => {
   it("shows submitting state initially and lists every step", () => {
     render(<ApplyAllModal steps={steps} onFinished={vi.fn()} />);
     expect(
-      screen.getByText(/Sinusumite ang iyong mga aplikasyon/i),
+      screen.getByText(/submitting your applications/i),
     ).toBeInTheDocument();
     expect(screen.getByText("Step A")).toBeInTheDocument();
     expect(screen.getByText("Step B")).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe("ApplyAllModal", () => {
 
     // No Continue button until all steps are submitted.
     expect(
-      screen.queryByRole("button", { name: /ipagpatuloy/i }),
+      screen.queryByRole("button", { name: /^continue$/i }),
     ).not.toBeInTheDocument();
 
     // Two steps × 900ms interval → run past both ticks.
@@ -48,9 +48,9 @@ describe("ApplyAllModal", () => {
       vi.advanceTimersByTime(2000);
     });
 
-    expect(screen.getByText(/Tapos na ang pag-apply/i)).toBeInTheDocument();
+    expect(screen.getByText(/all done applying/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /ipagpatuloy/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^continue$/i }));
     expect(onFinished).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,3 +1,7 @@
+"use client";
+
+import { useT } from "@/lib/i18n";
+
 function WarningIcon() {
   return (
     <svg
@@ -28,6 +32,7 @@ function WarningIcon() {
  * (amber) but not obtrusive; never presents amounts as guaranteed.
  */
 export function DisclaimerBox() {
+  const t = useT();
   return (
     <div
       role="note"
@@ -35,8 +40,9 @@ export function DisclaimerBox() {
     >
       <WarningIcon />
       <p>
-        Benefit details and eligibility may change. Always verify current
-        amounts and requirements on the official agency page before proceeding.
+        {t(
+          "Benefit details and eligibility may change. Always verify current amounts and requirements on the official agency page before proceeding.",
+        )}
       </p>
     </div>
   );

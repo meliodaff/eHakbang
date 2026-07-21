@@ -36,30 +36,29 @@ export interface VerificationCopy {
 }
 
 const DEFAULT_COPY: VerificationCopy = {
-  documentTitle: "I-verify ang iyong dokumento",
-  documentDescription:
-    "Mag-upload ng sumusuportang dokumento bago magpatuloy.",
-  uploadHint: "JPG, PNG, o PDF",
+  documentTitle: "Verify your document",
+  documentDescription: "Upload a supporting document before continuing.",
+  uploadHint: "JPG, PNG, or PDF",
 };
 
 const VERIFICATION_COPY: Record<string, VerificationCopy> = {
   "just-graduated": {
-    documentTitle: "I-verify ang iyong graduation",
+    documentTitle: "Verify your graduation",
     documentDescription:
-      "Mag-upload ng dokumento na nagpapatunay na ikaw ay nakapagtapos (hal. diploma o transcript) bago magpatuloy.",
-    uploadHint: "JPG, PNG, o PDF",
+      "Upload a document proving you graduated (e.g. diploma or transcript) before continuing.",
+    uploadHint: "JPG, PNG, or PDF",
   },
   "moved-residence": {
-    documentTitle: "I-verify ang iyong bagong tirahan",
+    documentTitle: "Verify your new residence",
     documentDescription:
-      "Mag-upload ng patunay ng bagong address (hal. billing statement o barangay certificate) bago magpatuloy.",
-    uploadHint: "JPG, PNG, o PDF",
+      "Upload proof of your new address (e.g. billing statement or barangay certificate) before continuing.",
+    uploadHint: "JPG, PNG, or PDF",
   },
   "first-job": {
-    documentTitle: "I-verify ang iyong trabaho",
+    documentTitle: "Verify your employment",
     documentDescription:
-      "Mag-upload ng patunay ng trabaho (hal. job offer o certificate of employment) bago magpatuloy.",
-    uploadHint: "JPG, PNG, o PDF",
+      "Upload proof of employment (e.g. job offer or certificate of employment) before continuing.",
+    uploadHint: "JPG, PNG, or PDF",
   },
 };
 

@@ -19,7 +19,7 @@ describe("ApplyAllPrompt", () => {
         onDecline={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /apply lahat/i }));
+    fireEvent.click(screen.getByRole("button", { name: /apply all/i }));
     expect(onApplyAll).toHaveBeenCalledTimes(1);
   });
 
@@ -32,7 +32,7 @@ describe("ApplyAllPrompt", () => {
         onDecline={onDecline}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /isa-isa/i }));
+    fireEvent.click(screen.getByRole("button", { name: /one by one/i }));
     expect(onDecline).toHaveBeenCalledTimes(1);
   });
 });

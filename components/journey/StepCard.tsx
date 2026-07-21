@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { JourneyStep } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/i18n";
 import { StepTypeBadge } from "./StepTypeBadge";
 import { DisclaimerBox } from "./DisclaimerBox";
 import { AskAboutStep } from "./AskAboutStep";
@@ -25,6 +26,7 @@ export function StepCard({
   onComplete: (stepNumber: number) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const t = useT();
   const isBenefit = step.step_type === "benefit_claim";
 
   return (
@@ -47,37 +49,37 @@ export function StepCard({
           {completed ? "✓" : step.step_number}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-muted">{step.agency_name}</p>
+          <p className="text-sm font-semibold text-muted">{t(step.agency_name)}</p>
           <div className="mt-1">
             <StepTypeBadge type={step.step_type} />
           </div>
           <h3 className="mt-2 text-base font-bold text-foreground">
-            {step.step_title}
+            {t(step.step_title)}
           </h3>
         </div>
       </div>
 
-      <p className="mt-3 text-sm text-foreground">{step.reason}</p>
+      <p className="mt-3 text-sm text-foreground">{t(step.reason)}</p>
 
       <div className="mt-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Documents needed
+          {t("Documents needed")}
         </p>
         <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-foreground">
           {step.documents_required.map((doc) => (
-            <li key={doc}>{doc}</li>
+            <li key={doc}>{t(doc)}</li>
           ))}
         </ul>
       </div>
 
       <p className="mt-3 text-sm text-muted">
-        <span className="font-semibold text-foreground">Estimated time:</span>{" "}
-        {step.estimated_time}
+        <span className="font-semibold text-foreground">{t("Estimated time:")}</span>{" "}
+        {t(step.estimated_time)}
       </p>
 
       {step.important_note && (
         <p className="mt-2 rounded-egov bg-egov-blue-050 px-3 py-2 text-sm text-egov-blue-dark">
-          {step.important_note}
+          {t(step.important_note)}
         </p>
       )}
 
@@ -94,24 +96,25 @@ export function StepCard({
           rel="noopener noreferrer"
           className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov border border-egov-blue px-4 py-2.5 text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
         >
-          Go to Official Service
+          {t("Go to Official Service")}
           <span aria-hidden>↗</span>
         </a>
 
         {completed ? (
           walletFulfilled ? (
             <p className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov bg-egov-success-bg px-4 py-2.5 text-center text-sm font-semibold text-egov-success">
-              <span aria-hidden>🪪</span> Meron ka na nito — nasa iyong ID Wallet
+              <span aria-hidden>🪪</span>{" "}
+              {t("You already have this — it's in your ID Wallet")}
             </p>
           ) : (
             <p className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov bg-egov-success-bg px-4 py-2.5 text-sm font-semibold text-egov-success">
-              <span aria-hidden>✓</span> Completed
+              <span aria-hidden>✓</span> {t("Completed")}
             </p>
           )
         ) : confirming ? (
           <div className="flex flex-col gap-2 rounded-egov bg-background p-3">
             <p className="text-sm font-semibold text-foreground">
-              Did you complete this step?
+              {t("Did you complete this step?")}
             </p>
             <div className="flex gap-2">
               <button
@@ -119,14 +122,14 @@ export function StepCard({
                 onClick={() => onComplete(step.step_number)}
                 className="min-h-11 flex-1 rounded-egov bg-egov-success px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-success"
               >
-                Yes
+                {t("Yes")}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
                 className="min-h-11 flex-1 rounded-egov border border-border px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
               >
-                Not Yet
+                {t("Not Yet")}
               </button>
             </div>
           </div>
@@ -136,7 +139,7 @@ export function StepCard({
             onClick={() => setConfirming(true)}
             className="min-h-11 rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
           >
-            Mark as Done
+            {t("Mark as Done")}
           </button>
         )}
       </div>

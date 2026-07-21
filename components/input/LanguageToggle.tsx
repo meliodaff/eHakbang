@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import type { Language } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { useLanguage } from "@/lib/i18n";
 
 const OPTIONS: { value: Language; label: string }[] = [
   { value: "fil", label: "FIL" },
@@ -10,11 +10,12 @@ const OPTIONS: { value: Language; label: string }[] = [
 ];
 
 /**
- * Filipino / English toggle (PRD FR-11). UI stub for now — persistence to
- * localStorage and re-rendering of content is wired in later.
+ * Filipino / English toggle (PRD FR-11). Backed by the global language context
+ * so the whole app re-renders in the selected language; the choice persists to
+ * localStorage across sessions.
  */
 export function LanguageToggle() {
-  const [language, setLanguage] = useState<Language>("fil");
+  const { lang, setLang } = useLanguage();
 
   return (
     <div
@@ -23,12 +24,12 @@ export function LanguageToggle() {
       className="inline-flex overflow-hidden rounded-full border border-egov-blue-100 text-xs font-semibold"
     >
       {OPTIONS.map((opt) => {
-        const active = language === opt.value;
+        const active = lang === opt.value;
         return (
           <button
             key={opt.value}
             type="button"
-            onClick={() => setLanguage(opt.value)}
+            onClick={() => setLang(opt.value)}
             aria-pressed={active}
             className={cn(
               "min-h-8 px-3 py-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue",

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Journey } from "@/lib/types";
 import { EhakbangHeader } from "@/components/layout/EhakbangHeader";
 import { archiveJourney } from "@/lib/journey-store";
+import { useT } from "@/lib/i18n";
 
 function formatDate(iso: string | null): string {
   const date = iso ? new Date(iso) : new Date();
@@ -31,6 +32,7 @@ export function CompletionCard({
   readOnly?: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
 
   return (
     <main className="flex flex-1 flex-col bg-surface">
@@ -44,11 +46,11 @@ export function CompletionCard({
       </span>
 
       <div>
-        <h1 className="text-2xl font-bold text-egov-navy">Journey Complete!</h1>
+        <h1 className="text-2xl font-bold text-egov-navy">{t("Journey Complete!")}</h1>
         <p className="mt-2 text-muted">
-          Natapos mo na ang lahat ng hakbang para sa{" "}
+          {t("You've completed all the steps for")}{" "}
           <span className="font-semibold text-foreground">
-            {journey.emoji} {journey.life_event}
+            {journey.emoji} {t(journey.life_event)}
           </span>
           .
         </p>
@@ -56,19 +58,19 @@ export function CompletionCard({
 
       <dl className="w-full max-w-xs rounded-egov bg-surface p-4 text-left shadow-sm">
         <div className="flex items-center justify-between py-1.5">
-          <dt className="text-muted">Life event</dt>
+          <dt className="text-muted">{t("Life event")}</dt>
           <dd className="font-semibold text-foreground">
-            {journey.life_event}
+            {t(journey.life_event)}
           </dd>
         </div>
         <div className="flex items-center justify-between py-1.5">
-          <dt className="text-muted">Steps completed</dt>
+          <dt className="text-muted">{t("Steps completed")}</dt>
           <dd className="font-semibold text-foreground">
-            {journey.total_steps} of {journey.total_steps}
+            {`${journey.total_steps} ${t("of")} ${journey.total_steps}`}
           </dd>
         </div>
         <div className="flex items-center justify-between py-1.5">
-          <dt className="text-muted">Completed on</dt>
+          <dt className="text-muted">{t("Completed on")}</dt>
           <dd className="font-semibold text-foreground">
             {formatDate(journey.completed_at)}
           </dd>
@@ -96,7 +98,7 @@ export function CompletionCard({
             onClick={() => router.push("/ehakbang")}
             className="min-h-12 rounded-egov border border-egov-blue px-5 py-3 font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
           >
-            Back to Home
+            {t("Back to Home")}
           </button>
         ) : journey.event_id === "got-married" ? (
           <button
@@ -104,7 +106,7 @@ export function CompletionCard({
             onClick={() => router.push("/ehakbang")}
             className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
           >
-            Continue to Dashboard
+            {t("Continue to Dashboard")}
           </button>
         ) : (
           <>
@@ -116,14 +118,14 @@ export function CompletionCard({
               }}
               className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
             >
-              Archive This Journey
+              {t("Archive This Journey")}
             </button>
             <button
               type="button"
               onClick={() => router.push("/")}
               className="min-h-12 rounded-egov border border-egov-blue px-5 py-3 font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
             >
-              Start a New Journey
+              {t("Start a New Journey")}
             </button>
           </>
         )}

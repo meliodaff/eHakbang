@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { getVerificationCopy } from "@/lib/verification";
+import { useT } from "@/lib/i18n";
 
 /**
  * Verification gate — Step 1 of 2 (PROTOTYPE).
@@ -16,6 +17,7 @@ import { getVerificationCopy } from "@/lib/verification";
  */
 export function DocumentVerifyScreen({ eventId }: { eventId?: string }) {
   const router = useRouter();
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
@@ -33,12 +35,12 @@ export function DocumentVerifyScreen({ eventId }: { eventId?: string }) {
   return (
     <main className="flex flex-1 flex-col gap-5 px-6 py-6">
       <p className="text-xs font-semibold uppercase tracking-wide text-egov-blue">
-        Verification · Step 1 of 2
+        {t("Verification · Step 1 of 2")}
       </p>
 
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-bold text-egov-navy">{copy.documentTitle}</h1>
-        <p className="text-muted">{copy.documentDescription}</p>
+        <h1 className="text-xl font-bold text-egov-navy">{t(copy.documentTitle)}</h1>
+        <p className="text-muted">{t(copy.documentDescription)}</p>
       </div>
 
       <input
@@ -57,14 +59,14 @@ export function DocumentVerifyScreen({ eventId }: { eventId?: string }) {
           className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-egov border-2 border-dashed border-border bg-surface-muted px-6 py-8 text-center text-muted transition-colors hover:border-egov-blue hover:text-egov-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
         >
           <span aria-hidden className="text-3xl">📄</span>
-          <span className="font-semibold">Pumili ng dokumento</span>
-          <span className="text-xs">{copy.uploadHint}</span>
+          <span className="font-semibold">{t("Choose a document")}</span>
+          <span className="text-xs">{t(copy.uploadHint)}</span>
         </button>
       ) : (
         <div className="flex items-center gap-3 rounded-egov bg-egov-success-bg px-4 py-4 text-egov-success">
           <span aria-hidden className="text-2xl">✓</span>
           <div className="flex flex-col">
-            <span className="font-semibold">Na-accept ang dokumento</span>
+            <span className="font-semibold">{t("Document accepted")}</span>
             <span className="truncate text-sm text-muted">{fileName}</span>
           </div>
         </div>
@@ -76,14 +78,15 @@ export function DocumentVerifyScreen({ eventId }: { eventId?: string }) {
           onClick={() => inputRef.current?.click()}
           className="self-start text-sm font-semibold text-egov-blue underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
         >
-          Palitan ang dokumento
+          {t("Change document")}
         </button>
       )}
 
       <div className="mt-auto flex flex-col gap-3">
         <p className="rounded-egov bg-egov-warning-bg px-4 py-3 text-sm text-egov-warning">
-          Demo lang: awtomatikong tinatanggap ang anumang dokumento. Walang
-          na-i-save o na-i-upload sa server.
+          {t(
+            "Demo only: any document is auto-accepted. Nothing is saved or uploaded to a server.",
+          )}
         </p>
         <button
           type="button"
@@ -91,7 +94,7 @@ export function DocumentVerifyScreen({ eventId }: { eventId?: string }) {
           onClick={() => router.push(nextHref)}
           className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Magpatuloy
+          {t("Continue")}
         </button>
       </div>
     </main>

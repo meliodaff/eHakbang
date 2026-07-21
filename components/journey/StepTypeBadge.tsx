@@ -1,5 +1,8 @@
+"use client";
+
 import type { StepType } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/i18n";
 
 function DocIcon() {
   return (
@@ -37,6 +40,7 @@ function PesoIcon() {
 
 /** Visually distinct label for the step type (PRD FR-04). */
 export function StepTypeBadge({ type }: { type: StepType }) {
+  const t = useT();
   const isBenefit = type === "benefit_claim";
   return (
     <span
@@ -48,7 +52,7 @@ export function StepTypeBadge({ type }: { type: StepType }) {
       )}
     >
       {isBenefit ? <PesoIcon /> : <DocIcon />}
-      {isBenefit ? "Benefit Claim" : "Record Update"}
+      {isBenefit ? t("Benefit Claim") : t("Record Update")}
     </span>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { JourneyStep } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/i18n";
 
 type RowStatus = "pending" | "submitting" | "done";
 
@@ -21,6 +22,7 @@ export function ApplyAllModal({
   steps: JourneyStep[];
   onFinished: () => void;
 }) {
+  const t = useT();
   const [currentIndex, setCurrentIndex] = useState(0);
   const done = currentIndex >= steps.length;
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -58,13 +60,13 @@ export function ApplyAllModal({
           className="text-lg font-bold text-egov-navy outline-none"
         >
           {done
-            ? "Tapos na ang pag-apply! 🎉"
-            : "Sinusumite ang iyong mga aplikasyon…"}
+            ? t("All done applying! 🎉")
+            : t("Submitting your applications…")}
         </h2>
         <p className="mt-1 text-sm text-muted">
           {done
-            ? `Naisumite sa lahat ng ${steps.length} ahensya.`
-            : "Isinusumite sa bawat ahensya nang sunod-sunod."}
+            ? `${t("Submitted to all")} ${steps.length} ${t("agencies.")}`
+            : t("Submitted to each agency in sequence.")}
         </p>
 
         <ul className="mt-4 flex flex-col gap-2" aria-live="polite">
@@ -100,7 +102,7 @@ export function ApplyAllModal({
                     status === "pending" ? "text-muted" : "text-foreground",
                   )}
                 >
-                  {step.step_title}
+                  {t(step.step_title)}
                 </span>
                 <span
                   className={cn(
@@ -113,10 +115,10 @@ export function ApplyAllModal({
                   )}
                 >
                   {status === "done"
-                    ? "Naisumite"
+                    ? t("Submitted")
                     : status === "submitting"
-                      ? "Sinusumite…"
-                      : "Naghihintay"}
+                      ? t("Submitting…")
+                      : t("Waiting")}
                 </span>
               </li>
             );
@@ -129,7 +131,7 @@ export function ApplyAllModal({
             onClick={onFinished}
             className="mt-5 min-h-12 w-full rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
           >
-            Ipagpatuloy
+            {t("Continue")}
           </button>
         )}
       </div>

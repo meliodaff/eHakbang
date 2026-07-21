@@ -49,7 +49,11 @@ export function getStoredJourney(id: string): Journey | undefined {
  * record on first engagement. Completion status/date are derived from whether
  * every step is done.
  */
-function persist(base: Journey, completedNumbers: number[]): Journey {
+function persist(
+  base: Journey,
+  completedNumbers: number[],
+  paidNumbers?: number[],
+): Journey {
   const list = read();
   const idx = list.findIndex((j) => j.id === base.id);
   const source = idx >= 0 ? list[idx] : base;
@@ -61,6 +65,7 @@ function persist(base: Journey, completedNumbers: number[]): Journey {
     created_at: source.created_at || new Date().toISOString(),
     completed_at: null,
     completed_step_numbers: merged,
+    paid_step_numbers: Array.from(new Set(paidNumbers ?? existingPayments(base))),
   };
   if (merged.length >= record.total_steps && record.total_steps > 0) {
     record.status = "completed";
@@ -76,6 +81,11 @@ function persist(base: Journey, completedNumbers: number[]): Journey {
 /** Completions already persisted for this journey (or the base's own set). */
 function existingCompletions(base: Journey): number[] {
   return getStoredJourney(base.id)?.completed_step_numbers ?? base.completed_step_numbers;
+}
+
+/** Paid fee step numbers already persisted for this journey (or the base's own set). */
+function existingPayments(base: Journey): number[] {
+  return getStoredJourney(base.id)?.paid_step_numbers ?? base.paid_step_numbers ?? [];
 }
 
 /**
@@ -100,6 +110,18 @@ export function completeStep(
  */
 export function markStepsDone(base: Journey, stepNumbers: number[]): Journey {
   return persist(base, [...existingCompletions(base), ...stepNumbers]);
+}
+
+/**
+ * Mark steps' government fees as paid (via eGovPay), persisting the journey
+ * on first engagement. Distinct from completion -- pairs with
+ * completeStep/markStepsDone, which still drive the checklist/auto-apply loop.
+ */
+export function markStepsPaid(base: Journey, stepNumbers: number[]): Journey {
+  return persist(base, existingCompletions(base), [
+    ...existingPayments(base),
+    ...stepNumbers,
+  ]);
 }
 
 /** Remove any stored journey for a given life-event id (e.g. "got-married"). */

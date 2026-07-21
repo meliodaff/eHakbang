@@ -1,9 +1,12 @@
 import type { Journey, JourneyStep } from "./types";
 
 /**
- * Per-life-event journeys. Selecting a life event opens the matching journey
- * here. Step content is illustrative (a demo stand-in for AI-generated output);
- * users are always routed to the official page for exact amounts/requirements.
+ * Per-life-event seed journeys. Requirements are normally AI-generated and
+ * cached in Supabase (see lib/server/journey-requirements.ts); this map is
+ * the fallback used when OpenAI/Supabase aren't configured or a call fails,
+ * so local dev and offline use still work. Also used directly by
+ * JourneyScreen when no server-prefetched journey is available (e.g. tests).
+ * Users are always routed to the official page for exact amounts/requirements.
  */
 
 type StepSeed = Omit<JourneyStep, "step_number">;
@@ -34,6 +37,7 @@ function build(
     created_at: "2026-07-22T00:00:00.000Z",
     completed_at: null,
     completed_step_numbers: [],
+    paid_step_numbers: [],
   };
 }
 

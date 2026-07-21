@@ -3,6 +3,7 @@ import { GreetingCard } from "@/components/layout/GreetingCard";
 import { SearchInput } from "@/components/input/SearchInput";
 import { EventCardGrid } from "@/components/input/EventCardGrid";
 import { EhakbangActiveSection } from "@/components/ehakbang/ActiveSection";
+import { JourneyRefreshNotice } from "@/components/ehakbang/JourneyRefreshNotice";
 import { TodayDate } from "@/components/egov/TodayDate";
 import { LocationPinIcon, AiIcon } from "@/components/egov/ServiceIcons";
 
@@ -29,6 +30,8 @@ export default function EhakbangHome() {
       <div className="mt-4 px-5">
         <SearchInput />
       </div>
+
+      <JourneyRefreshNotice />
 
       {/* Quick actions + active journey + stats (from saved journeys) */}
       <EhakbangActiveSection />

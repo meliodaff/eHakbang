@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Journey } from "@/lib/types";
@@ -14,6 +14,7 @@ import {
 import { useIdWallet, stepFulfilledByWallet } from "@/lib/id-wallet";
 import { eventSupportsApplyAll } from "@/lib/journey-features";
 import { useT } from "@/lib/i18n";
+import { recordJourneyRefresh } from "@/lib/journey-notice-store";
 import { JourneyView } from "./JourneyView";
 import { ApplyAllPrompt } from "./ApplyAllPrompt";
 import { ApplyAllModal } from "./ApplyAllModal";
@@ -24,7 +25,17 @@ import { ApplyAllModal } from "./ApplyAllModal";
  * (ID wallet), persists completions to localStorage, and routes to the
  * completion screen once every step is done.
  */
-export function JourneyScreen({ eventId }: { eventId?: string }) {
+export function JourneyScreen({
+  eventId,
+  initialJourney,
+  regenerated = false,
+}: {
+  eventId?: string;
+  /** Server-prefetched AI/cache/seed journey for a predefined event (see app/journey/page.tsx). */
+  initialJourney?: Journey;
+  /** True when `initialJourney` was just freshly AI-generated (vs. served from cache/seed). */
+  regenerated?: boolean;
+}) {
   const router = useRouter();
   const t = useT();
   const [journey, setJourney] = useState<Journey | null>(null);
@@ -36,10 +47,13 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
   // Shows the submission-progress modal while "Apply All" runs.
   const [showApplyModal, setShowApplyModal] = useState(false);
   const { heldIds, ready: walletReady } = useIdWallet();
+  const refreshNoticeRecorded = useRef(false);
 
   useEffect(() => {
     let base: Journey | undefined;
-    if (eventId && EVENT_JOURNEYS[eventId]) {
+    if (initialJourney) {
+      base = getStoredJourney(initialJourney.id) ?? initialJourney;
+    } else if (eventId && EVENT_JOURNEYS[eventId]) {
       const catalog = EVENT_JOURNEYS[eventId];
       base = getStoredJourney(catalog.id) ?? { ...catalog };
     } else {
@@ -47,7 +61,14 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
     }
     setJourney(base ?? null);
     setReady(true);
-  }, [eventId]);
+  }, [eventId, initialJourney]);
+
+  useEffect(() => {
+    if (regenerated && initialJourney && !refreshNoticeRecorded.current) {
+      refreshNoticeRecorded.current = true;
+      recordJourneyRefresh(initialJourney.event_id ?? "", initialJourney.life_event);
+    }
+  }, [regenerated, initialJourney]);
 
   // Steps auto-satisfied because the matching ID is already in the wallet.
   const walletStepNumbers = useMemo(() => {

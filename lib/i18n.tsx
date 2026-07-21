@@ -119,6 +119,12 @@ const FIL: Record<string, string> = {
     "Lalabas dito ang mga sagot mula sa eHakbang AI kapag naka-connect na. Sa ngayon, sumangguni sa opisyal na service page sa itaas.",
   "Benefit details and eligibility may change. Always verify current amounts and requirements on the official agency page before proceeding.":
     "Maaaring magbago ang detalye at pagiging kwalipikado sa benepisyo. Palaging tiyakin ang kasalukuyang halaga at requirements sa opisyal na agency page bago magpatuloy.",
+  Fee: "Bayad",
+  Free: "Libre",
+  "Requirements for": "Ang requirements para sa",
+  "were just refreshed with the latest information.":
+    "kararaan lang i-refresh gamit ang pinakabagong impormasyon.",
+  Dismiss: "Isara",
 
   // ── Journey screen chrome ─────────────────────────────────
   "All steps complete! 🎉": "Kumpleto na ang lahat ng hakbang! 🎉",

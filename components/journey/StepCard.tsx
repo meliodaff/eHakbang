@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { JourneyStep } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { useT } from "@/lib/i18n";
+import { linkifyText, stripInlineLinks } from "@/lib/format-ai-text";
 import { StepTypeBadge } from "./StepTypeBadge";
 import { DisclaimerBox } from "./DisclaimerBox";
 import { AskAboutStep } from "./AskAboutStep";
@@ -59,7 +60,7 @@ export function StepCard({
         </div>
       </div>
 
-      <p className="mt-3 text-sm text-foreground">{t(step.reason)}</p>
+      <p className="mt-3 text-sm text-foreground">{linkifyText(t(step.reason))}</p>
 
       <div className="mt-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -74,13 +75,34 @@ export function StepCard({
 
       <p className="mt-3 text-sm text-muted">
         <span className="font-semibold text-foreground">{t("Estimated time:")}</span>{" "}
-        {t(step.estimated_time)}
+        {stripInlineLinks(t(step.estimated_time))}
       </p>
 
       {step.important_note && (
         <p className="mt-2 rounded-egov bg-egov-blue-050 px-3 py-2 text-sm text-egov-blue-dark">
-          {t(step.important_note)}
+          {linkifyText(t(step.important_note))}
         </p>
+      )}
+
+      {step.fee && (
+        <div className="mt-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+            {t("Fee")}
+          </p>
+          <p className="mt-1 text-sm text-foreground">
+            {t(step.fee.amount)} — {linkifyText(t(step.fee.how_to_pay))}
+          </p>
+          {step.fee.official_source_url && (
+            <a
+              href={step.fee.official_source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-block text-xs font-semibold text-egov-blue underline underline-offset-2"
+            >
+              {t("Source")}
+            </a>
+          )}
+        </div>
       )}
 
       {isBenefit && (

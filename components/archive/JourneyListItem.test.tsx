@@ -17,6 +17,7 @@ const base: Journey = {
   created_at: "2026-07-18T09:00:00.000Z",
   completed_at: null,
   completed_step_numbers: [1, 2],
+  paid_step_numbers: [],
 };
 
 describe("JourneyListItem", () => {

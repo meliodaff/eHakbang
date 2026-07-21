@@ -24,15 +24,31 @@ export interface GenerateJourneyInput {
 }
 
 /**
- * Generate a journey for a life event.
- * TODO(api): POST to `/api/journey` (server route holding ANTHROPIC_API_KEY),
- * then resolve each step's `egov_url` via the eGov catalog.
+ * Generate a journey for a life event. Predefined events (`eventId` set) are
+ * normally prefetched server-side by `app/journey/page.tsx`; this POSTs to
+ * the same `/api/journey` route and is used for manual/on-demand refresh.
+ * Free-text life events (no `eventId`) fall back to the mock journey.
  */
 export async function generateJourney(
-  _input: GenerateJourneyInput,
+  input: GenerateJourneyInput,
 ): Promise<Journey> {
-  // Stub: return the active mock journey.
-  return getActiveJourney() ?? MOCK_JOURNEYS[0];
+  if (!input.eventId) {
+    return getActiveJourney() ?? MOCK_JOURNEYS[0];
+  }
+  const res = await fetch("/api/journey", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventId: input.eventId,
+      language: input.language ?? "en",
+    }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to generate journey");
+  }
+  const data: { journey: Journey; regenerated: boolean } = await res.json();
+  return data.journey;
 }
 
 /** Fetch a single journey by id (mock-backed for now). */
@@ -103,4 +119,63 @@ export async function applyMarriageTransaction(
 ): Promise<{ stepNumber: number; submitted: boolean }> {
   await new Promise((resolve) => setTimeout(resolve, 700));
   return { stepNumber: step.step_number, submitted: true };
+}
+
+export interface CreateFeePaymentInput {
+  eventId: string;
+  language?: Language;
+  stepNumbers: number[];
+}
+
+export interface CreateFeePaymentResult {
+  uuid: string;
+  url: string;
+  txnid: string;
+  amount: number;
+  currency: string;
+  stepNumbers: number[];
+}
+
+/**
+ * Start an eGovPay transaction for a bundle of fee-bearing steps.
+ * Uses the server-side proxy at /api/payment, which re-derives and validates
+ * the fee amounts itself rather than trusting the caller's numbers.
+ */
+export async function createFeePayment(
+  input: CreateFeePaymentInput,
+): Promise<CreateFeePaymentResult> {
+  const res = await fetch("/api/payment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventId: input.eventId,
+      language: input.language ?? "en",
+      stepNumbers: input.stepNumbers,
+    }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to start payment");
+  }
+  return res.json();
+}
+
+export interface PaymentStatus {
+  uuid: string;
+  paid: boolean;
+  paidAt: string | null;
+  refno: string | null;
+  amount: string;
+  currency: string;
+  paymentStatus: string;
+}
+
+/** Check an in-flight eGovPay transaction's status via /api/payment/[uuid]. */
+export async function fetchPaymentStatus(uuid: string): Promise<PaymentStatus> {
+  const res = await fetch(`/api/payment/${encodeURIComponent(uuid)}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to fetch payment status");
+  }
+  return res.json();
 }

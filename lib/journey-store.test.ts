@@ -5,6 +5,7 @@ import {
   getAllJourneys,
   getStoredJourney,
   markStepsDone,
+  markStepsPaid,
   resetJourney,
 } from "./journey-store";
 
@@ -83,6 +84,29 @@ describe("journey-store persistence", () => {
     const catalog = getJourneyByEventId("got-married")!;
     completeStep(catalog, 1);
     expect(getStoredJourney(catalog.id)?.completed_step_numbers).toEqual([1]);
+  });
+
+  it("markStepsPaid persists paid step numbers without affecting completion", () => {
+    const catalog = getJourneyByEventId("got-married")!;
+    const updated = markStepsPaid({ ...catalog }, [1]);
+    expect(updated.paid_step_numbers).toEqual([1]);
+    expect(updated.completed_step_numbers).toEqual([]);
+    expect(updated.status).toBe("active");
+  });
+
+  it("markStepsPaid merges with previously paid step numbers", () => {
+    const catalog = getJourneyByEventId("got-married")!;
+    markStepsPaid({ ...catalog }, [1]);
+    const updated = markStepsPaid(getStoredJourney(catalog.id)!, [2]);
+    expect(updated.paid_step_numbers.sort()).toEqual([1, 2]);
+  });
+
+  it("completeStep preserves previously paid step numbers", () => {
+    const catalog = getJourneyByEventId("got-married")!;
+    markStepsPaid({ ...catalog }, [1]);
+    const updated = completeStep(getStoredJourney(catalog.id)!, 1);
+    expect(updated.paid_step_numbers).toEqual([1]);
+    expect(updated.completed_step_numbers).toEqual([1]);
   });
 
   it("resetJourney removes only the matching event's stored journey", () => {

@@ -47,6 +47,8 @@ export interface JourneyStep {
 export interface Journey {
   /** Stable id, e.g. `ehakbang:journey:{timestamp}` in localStorage later. */
   id: string;
+  /** Source life-event id, when the journey came from a predefined event. */
+  event_id?: string;
   /** Emoji shown in the archive list and headers (UI convenience). */
   emoji: string;
   /** Normalized life event label. */

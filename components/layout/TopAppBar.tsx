@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { LanguageToggle } from "@/components/input/LanguageToggle";
 import { EhakbangLogo } from "@/components/brand/Logo";
 
@@ -8,7 +9,7 @@ import { EhakbangLogo } from "@/components/brand/Logo";
  * service screens.
  */
 export function TopAppBar({
-  brand = "E-Hakbang",
+  brand = "eHakbang",
   backHref,
 }: {
   brand?: string;
@@ -43,7 +44,15 @@ export function TopAppBar({
         </Link>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        <Image
+          src="/bagong-pilipinas.jpg"
+          alt="Bagong Pilipinas"
+          width={112}
+          height={92}
+          priority
+          className="h-8 w-auto shrink-0"
+        />
         <LanguageToggle />
         <Link
           href="/about"

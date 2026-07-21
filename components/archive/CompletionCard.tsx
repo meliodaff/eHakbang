@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import type { Journey } from "@/lib/types";
+import { archiveJourney } from "@/lib/journey-store";
+import { EhakbangHeader } from "@/components/layout/EhakbangHeader";
 
 function formatDate(iso: string | null): string {
   const date = iso ? new Date(iso) : new Date();
@@ -21,7 +23,9 @@ export function CompletionCard({ journey }: { journey: Journey }) {
   const router = useRouter();
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-10 text-center">
+    <main className="flex flex-1 flex-col bg-surface">
+      <EhakbangHeader backHref="/journeys" />
+      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-10 text-center">
       <span
         className="flex h-20 w-20 items-center justify-center rounded-full bg-egov-success-bg text-4xl text-egov-success"
         aria-hidden
@@ -64,7 +68,10 @@ export function CompletionCard({ journey }: { journey: Journey }) {
       <div className="flex w-full max-w-xs flex-col gap-2">
         <button
           type="button"
-          onClick={() => router.push("/journeys")}
+          onClick={() => {
+            archiveJourney(journey.id);
+            router.push("/journeys");
+          }}
           className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
         >
           Archive This Journey
@@ -76,6 +83,7 @@ export function CompletionCard({ journey }: { journey: Journey }) {
         >
           Start a New Journey
         </button>
+      </div>
       </div>
     </main>
   );

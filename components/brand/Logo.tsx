@@ -45,13 +45,12 @@ export function EhakbangLogo({
 }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <EhakbangMark className="h-8 w-8" />
-      <span className="text-xl font-extrabold tracking-tight">
+      <span className="whitespace-nowrap text-xl font-extrabold tracking-tight">
         {onDark ? (
-          <span className="text-white">E-Hakbang</span>
+          <span className="text-white">eHakbang</span>
         ) : (
           <>
-            <span className="text-egov-blue">E-</span>
+            <span className="text-egov-blue">e</span>
             <span className="text-egov-navy">Hakbang</span>
           </>
         )}

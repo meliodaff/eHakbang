@@ -44,7 +44,13 @@ export function JourneyListItem({ journey }: { journey: Journey }) {
         </div>
       </div>
       <Link
-        href={isActive ? "/journey" : `/journey/complete?id=${journey.id}`}
+        href={
+          isActive
+            ? journey.event_id
+              ? `/journey?event=${journey.event_id}`
+              : "/journey"
+            : `/journey/complete?id=${journey.id}`
+        }
         className={cn(
           "min-h-10 shrink-0 rounded-egov px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue",
           isActive

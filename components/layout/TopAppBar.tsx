@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { LanguageToggle } from "@/components/input/LanguageToggle";
+import { EhakbangLogo } from "@/components/brand/Logo";
 
 /**
- * eGov-style top app bar: brand wordmark on the left, language toggle + info
- * action on the right, with an optional back button. Reused by both the eGov
- * host home and the E-Hakbang service screens.
+ * eGov-style top app bar: brand logo on the left, language toggle + info
+ * action on the right, with an optional back button. Reused by the E-Hakbang
+ * service screens.
  */
 export function TopAppBar({
   brand = "E-Hakbang",
@@ -34,13 +35,11 @@ export function TopAppBar({
           </Link>
         )}
         <Link
-          href="/"
-          className="flex items-baseline gap-0.5 text-xl font-extrabold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+          href="/ehakbang"
+          aria-label={brand}
+          className="rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
         >
-          <span className="text-egov-blue">{brand}</span>
-          <span aria-hidden className="text-base">
-            🇵🇭
-          </span>
+          <EhakbangLogo />
         </Link>
       </div>
 

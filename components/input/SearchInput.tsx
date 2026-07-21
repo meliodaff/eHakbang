@@ -52,7 +52,7 @@ export function SearchInput() {
       <div className="relative">
         <span
           aria-hidden
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-foreground"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
             <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
@@ -74,7 +74,7 @@ export function SearchInput() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Ilarawan ang sitwasyon… (hal. Bagong kasal)"
-          className="w-full rounded-full border border-border bg-surface-muted py-3.5 pl-11 pr-4 text-base text-foreground placeholder:text-muted focus-visible:border-egov-blue focus-visible:bg-surface focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-egov-blue"
+          className="w-full rounded-egov border border-border bg-surface py-3.5 pl-4 pr-11 text-base text-foreground shadow-sm placeholder:text-muted focus-visible:border-egov-blue focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-egov-blue"
         />
       </div>
 
@@ -99,7 +99,7 @@ export function SearchInput() {
         type="submit"
         disabled={!query.trim()}
         className={cn(
-          "min-h-12 rounded-full bg-egov-blue px-5 py-3 text-base font-semibold text-white transition-colors",
+          "min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-base font-semibold text-white transition-colors",
           "hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue",
           "disabled:cursor-not-allowed disabled:opacity-50",
         )}

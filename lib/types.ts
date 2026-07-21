@@ -75,6 +75,8 @@ export interface LifeEvent {
   label: string;
   /** English sub-label. */
   sublabel: string;
+  /** Very short caption for compact tiles (e.g., "Baby", "Married"). */
+  short: string;
   /** Natural-language text used to populate the input / journey generation. */
   description: string;
   /** True for the primary 8 cards; false for "More events". */

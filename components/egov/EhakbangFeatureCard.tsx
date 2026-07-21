@@ -1,35 +1,42 @@
 import Link from "next/link";
+import { EhakbangIcon } from "./ServiceIcons";
 
 /**
- * Prominent entry point for the E-Hakbang service on the eGov host home.
- * This is the main call-to-action button that launches the journey planner.
+ * Carousel-style banner promoting the E-Hakbang service, styled like the eGov
+ * home banners: a light card with a title block and a decorative panel.
+ * (Original artwork — not copied from any app.) Links to the planner.
  */
 export function EhakbangFeatureCard() {
   return (
     <Link
       href="/ehakbang"
-      className="flex items-center gap-4 rounded-egov-lg bg-gradient-to-r from-egov-navy to-egov-blue p-4 text-white shadow-md transition-transform hover:scale-[1.01] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+      className="flex items-center gap-3 overflow-hidden rounded-egov-lg bg-egov-blue-050 p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
     >
-      <span
-        aria-hidden
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-egov bg-white/15 text-3xl"
-      >
-        🧭
-      </span>
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2 font-bold">
+        <p className="flex items-center gap-1.5 text-sm font-extrabold tracking-tight text-egov-blue">
           E-Hakbang
-          <span className="rounded-full bg-egov-yellow px-1.5 py-0.5 text-[10px] font-bold leading-none text-egov-navy">
+          <span className="rounded bg-egov-yellow px-1 py-0.5 text-[9px] font-bold leading-none text-egov-navy">
             AI
           </span>
         </p>
-        <p className="mt-0.5 text-sm text-egov-blue-050">
-          Anong dapat gawin pagkatapos ng life event? Alamin dito.
+        <p className="mt-1 text-base font-bold leading-snug text-foreground">
+          Gabay sa Gobyerno
+        </p>
+        <p className="mt-0.5 text-xs text-muted">
+          Step-by-step after any life event
         </p>
       </div>
-      <span aria-hidden className="text-xl">
-        →
-      </span>
+
+      {/* Decorative panel (original) */}
+      <div
+        aria-hidden
+        className="relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-egov bg-gradient-to-br from-egov-blue to-egov-navy text-white"
+      >
+        <span className="[&>svg]:h-8 [&>svg]:w-8">
+          <EhakbangIcon />
+        </span>
+        <span className="absolute -right-2 -top-2 h-8 w-8 rounded-full bg-egov-yellow/60" />
+      </div>
     </Link>
   );
 }

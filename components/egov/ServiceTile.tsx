@@ -24,13 +24,13 @@ export function ServiceTile({
       <span
         aria-hidden
         className={cn(
-          "relative flex h-16 w-16 items-center justify-center rounded-egov text-2xl",
+          "relative flex h-14 w-14 items-center justify-center rounded-full text-2xl",
           highlight ? "bg-egov-blue text-white" : "bg-egov-blue-050 text-egov-blue",
         )}
       >
         {icon}
         {badge && (
-          <span className="absolute -right-1 -top-1 rounded-full bg-egov-red px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+          <span className="absolute -right-1 -top-1 rounded-md bg-egov-red px-1 py-0.5 text-[9px] font-bold uppercase leading-none text-white">
             {badge}
           </span>
         )}
@@ -45,7 +45,7 @@ export function ServiceTile({
     return (
       <Link
         href={href}
-        className="group flex flex-col items-center gap-1.5 rounded-egov p-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+        className="group flex w-16 shrink-0 flex-col items-center gap-1.5 rounded-egov p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
       >
         {inner}
       </Link>
@@ -53,7 +53,7 @@ export function ServiceTile({
   }
 
   return (
-    <div className="flex flex-col items-center gap-1.5 p-1.5" aria-hidden>
+    <div className="flex w-16 shrink-0 flex-col items-center gap-1.5 p-1" aria-hidden>
       {inner}
     </div>
   );

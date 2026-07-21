@@ -3,7 +3,7 @@
  * onboarding flow (PRD marriage flow), rather than straight to the journey
  * checklist or the separate verification gate (see `verification.ts`).
  */
-export const CIVIL_STATUS_EVENT_IDS = ["got-married", "annulment"] as const;
+export const CIVIL_STATUS_EVENT_IDS = ["got-married", "annulment", "retired", "lost-a-job", "had-a-baby"] as const;
 
 /** True when the given life event uses the confirm/document/face-verify flow. */
 export function isCivilStatusEvent(eventId: string | undefined): boolean {
@@ -15,6 +15,9 @@ export function isCivilStatusEvent(eventId: string | undefined): boolean {
 export const CIVIL_STATUS_RESULT: Record<string, string> = {
   "got-married": "Married",
   annulment: "Single",
+  retired: "Retired",
+  "lost-a-job": "Unemployed",
+  "had-a-baby": "Parent",
 };
 
 /** The civil status change (from → to) each event's steps apply. */
@@ -35,6 +38,21 @@ const CIVIL_STATUS_TRANSITIONS: Record<string, CivilStatusTransition> = {
     from: "Married",
     to: "Single",
     surnameExample: "Juana Dela Cruz-Santos → Juana Dela Cruz",
+  },
+  retired: {
+    from: "Employed",
+    to: "Retired",
+    surnameExample: "Juan Dela Cruz",
+  },
+  "lost-a-job": {
+    from: "Employed",
+    to: "Unemployed",
+    surnameExample: "Juan Dela Cruz",
+  },
+  "had-a-baby": {
+    from: "Married",
+    to: "Parent",
+    surnameExample: "Juana Dela Cruz-Santos",
   },
 };
 
@@ -73,6 +91,33 @@ const CIVIL_STATUS_COPY: Record<string, CivilStatusCopy> = {
     documentTitle: "Attach proof of annulment",
     documentDescription:
       "Upload a copy of your court decree of annulment or PSA-annotated marriage certificate, so we can verify your update.",
+  },
+  retired: {
+    confirmQuestion: "Have you recently retired?",
+    confirmDescription:
+      "We'll help you claim your pension and update your memberships across government agencies.",
+    declinedMessage: "This flow is for people who have recently retired.",
+    documentTitle: "Attach proof of retirement",
+    documentDescription:
+      "Upload a copy of your certificate of retirement, last payslip, or employer certification, so we can verify your claim.",
+  },
+  "lost-a-job": {
+    confirmQuestion: "Did you recently lose your job?",
+    confirmDescription:
+      "We'll help you claim unemployment benefits and keep your memberships active.",
+    declinedMessage: "This flow is for people who recently lost their job.",
+    documentTitle: "Attach proof of separation",
+    documentDescription:
+      "Upload a copy of your DOLE certificate of involuntary separation, termination letter, or employer certification, so we can verify your claim.",
+  },
+  "had-a-baby": {
+    confirmQuestion: "Did you recently have a baby?",
+    confirmDescription:
+      "We'll help you register your newborn and claim your maternity and health benefits.",
+    declinedMessage: "This flow is for people who recently had a baby.",
+    documentTitle: "Attach proof of birth",
+    documentDescription:
+      "Upload a copy of your baby's Certificate of Live Birth or hospital birth record, so we can verify your claim.",
   },
 };
 

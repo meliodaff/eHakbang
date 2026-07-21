@@ -37,7 +37,7 @@ describe("EventCardGrid", () => {
 
   it("navigates to the journey route with the selected event id", () => {
     render(<EventCardGrid />);
-    const target = COMMON_LIFE_EVENTS.find((e) => e.id !== "got-married")!;
+    const target = COMMON_LIFE_EVENTS.find((e) => e.id === "started-a-business")!;
     fireEvent.click(screen.getByText(target.short));
     expect(push).toHaveBeenCalledWith(`/journey?event=${target.id}`);
   });

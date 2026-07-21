@@ -21,18 +21,18 @@ export function EventCardGrid() {
 
   return (
     <section aria-labelledby="events-heading" className="flex flex-col gap-3">
-      <h2 id="events-heading" className="text-sm font-semibold text-muted">
-        O piliin ang pinakamalapit sa sitwasyon mo
+      <h2 id="events-heading" className="text-base font-bold text-foreground">
+        Piliin ang life event
       </h2>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-4 gap-2">
         {COMMON_LIFE_EVENTS.map((event) => (
           <EventCard key={event.id} event={event} onSelect={handleSelect} />
         ))}
       </div>
 
       {showMore && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           {MORE_LIFE_EVENTS.map((event) => (
             <EventCard key={event.id} event={event} onSelect={handleSelect} />
           ))}

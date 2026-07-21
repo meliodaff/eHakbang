@@ -20,7 +20,7 @@ export function LanguageToggle() {
     <div
       role="group"
       aria-label="Language"
-      className="inline-flex overflow-hidden rounded-full border border-white/30 text-xs font-semibold"
+      className="inline-flex overflow-hidden rounded-full border border-egov-blue-100 text-xs font-semibold"
     >
       {OPTIONS.map((opt) => {
         const active = language === opt.value;
@@ -31,8 +31,8 @@ export function LanguageToggle() {
             onClick={() => setLanguage(opt.value)}
             aria-pressed={active}
             className={cn(
-              "min-h-8 px-3 py-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
-              active ? "bg-white text-egov-blue-dark" : "text-white",
+              "min-h-8 px-3 py-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue",
+              active ? "bg-egov-blue text-white" : "text-egov-blue",
             )}
           >
             {opt.label}

@@ -8,8 +8,8 @@ import { BottomTabBar } from "./BottomTabBar";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background shadow-sm">
-      {/* Content area — bottom padding clears the fixed tab bar (56px + safe area). */}
-      <div className="flex flex-1 flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+      {/* Content area — bottom padding clears the fixed tab bar. */}
+      <div className="flex flex-1 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
         {children}
       </div>
       <BottomTabBar />

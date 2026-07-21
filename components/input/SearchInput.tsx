@@ -49,18 +49,34 @@ export function SearchInput() {
       <label htmlFor="life-event" className="sr-only">
         Ilarawan ang iyong sitwasyon
       </label>
-      <input
-        id="life-event"
-        name="life-event"
-        type="text"
-        // eslint-disable-next-line jsx-a11y/no-autofocus
-        autoFocus
-        autoComplete="off"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Ilarawan ang iyong sitwasyon… (hal. Bagong kasal, Nawalan ng trabaho)"
-        className="w-full rounded-egov border border-border bg-surface px-4 py-3.5 text-base text-foreground shadow-sm placeholder:text-muted focus-visible:border-egov-blue focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-egov-blue"
-      />
+      <div className="relative">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
+            <path
+              d="m20 20-3.2-3.2"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+        </span>
+        <input
+          id="life-event"
+          name="life-event"
+          type="text"
+          // eslint-disable-next-line jsx-a11y/no-autofocus
+          autoFocus
+          autoComplete="off"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ilarawan ang sitwasyon… (hal. Bagong kasal)"
+          className="w-full rounded-full border border-border bg-surface-muted py-3.5 pl-11 pr-4 text-base text-foreground placeholder:text-muted focus-visible:border-egov-blue focus-visible:bg-surface focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-egov-blue"
+        />
+      </div>
 
       {suggestions.length > 0 && (
         <ul className="flex flex-wrap gap-2" aria-label="Mga mungkahi">
@@ -83,7 +99,7 @@ export function SearchInput() {
         type="submit"
         disabled={!query.trim()}
         className={cn(
-          "min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-base font-semibold text-white shadow-sm transition-colors",
+          "min-h-12 rounded-full bg-egov-blue px-5 py-3 text-base font-semibold text-white transition-colors",
           "hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue",
           "disabled:cursor-not-allowed disabled:opacity-50",
         )}

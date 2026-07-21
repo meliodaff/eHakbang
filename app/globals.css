@@ -7,31 +7,32 @@
 */
 @theme {
   /* Brand blues */
-  --color-egov-blue: #1560bd;        /* primary royal blue */
-  --color-egov-blue-dark: #0d47a1;   /* darker blue for gradients/hover */
-  --color-egov-navy: #0038a8;        /* deep flag navy */
-  --color-egov-blue-050: #eaf1fb;    /* tinted surfaces / active tab bg */
-  --color-egov-blue-100: #d3e3f7;
+  --color-egov-blue: #1b5fe0;        /* primary royal blue (eGov-style) */
+  --color-egov-blue-dark: #1749b8;   /* darker blue for hover/press */
+  --color-egov-navy: #0f3d99;        /* deep blue */
+  --color-egov-blue-050: #eaf1fe;    /* pale tile / active tab background */
+  --color-egov-blue-100: #d6e4fd;
 
   /* Flag accents */
-  --color-egov-red: #ce1126;
+  --color-egov-red: #e5352b;         /* "New" badges, notification dots */
   --color-egov-yellow: #fcd116;
 
   /* Semantic (PRD §10.1 color-as-meaning) */
   --color-egov-success: #1a8a4b;     /* green = done / benefit claim */
   --color-egov-success-bg: #e6f5ec;
-  --color-egov-record: #1560bd;      /* blue = record update */
-  --color-egov-record-bg: #eaf1fb;
+  --color-egov-record: #1b5fe0;      /* blue = record update */
+  --color-egov-record-bg: #eaf1fe;
   --color-egov-warning: #b45309;     /* amber = caution/disclaimer */
   --color-egov-warning-bg: #fef3c7;
-  --color-egov-danger: #ce1126;      /* red = required/urgent */
+  --color-egov-danger: #e5352b;      /* red = required/urgent */
 
   /* Neutrals / surfaces */
-  --color-background: #f4f6f9;        /* app light-grey background */
+  --color-background: #ffffff;        /* clean white app background */
   --color-surface: #ffffff;          /* cards */
-  --color-foreground: #1a2230;       /* primary text */
-  --color-muted: #5b6675;            /* secondary text */
-  --color-border: #e2e8f0;
+  --color-surface-muted: #f4f7fb;    /* promo banners / subtle sections */
+  --color-foreground: #16233a;       /* primary text (near navy-black) */
+  --color-muted: #6b7688;            /* secondary text */
+  --color-border: #e8edf4;
 
   /* Fonts (bound to next/font CSS variables in layout.tsx) */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;

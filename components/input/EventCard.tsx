@@ -1,8 +1,8 @@
 import type { LifeEvent } from "@/lib/types";
 
 /**
- * A single life-event shortcut tile (emoji, Filipino label, English sublabel).
- * Rendered as a button so selecting it can trigger journey generation.
+ * eGov-style service tile: a pale-blue rounded-square icon (emoji) with a short
+ * caption underneath. Rendered as a button so selecting it generates a journey.
  */
 export function EventCard({
   event,
@@ -15,13 +15,17 @@ export function EventCard({
     <button
       type="button"
       onClick={() => onSelect(event)}
-      className="flex min-h-24 flex-col items-start gap-1 rounded-egov border border-border bg-surface p-4 text-left shadow-sm transition-colors hover:border-egov-blue hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+      className="group flex flex-col items-center gap-1.5 rounded-egov p-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
     >
-      <span className="text-3xl" aria-hidden>
+      <span
+        aria-hidden
+        className="flex h-16 w-16 items-center justify-center rounded-egov bg-egov-blue-050 text-3xl transition-colors group-hover:bg-egov-blue-100"
+      >
         {event.emoji}
       </span>
-      <span className="mt-1 font-semibold text-foreground">{event.label}</span>
-      <span className="text-sm text-muted">{event.sublabel}</span>
+      <span className="text-center text-xs font-medium leading-tight text-foreground">
+        {event.sublabel}
+      </span>
     </button>
   );
 }

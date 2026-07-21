@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { COMMON_LIFE_EVENTS, MORE_LIFE_EVENTS } from "@/lib/events";
 import { eventRequiresVerification } from "@/lib/verification";
+import { isCivilStatusEvent } from "@/lib/civil-status-events";
 import { getJourneyByEventId } from "@/lib/event-journeys";
 import { getStoredJourney } from "@/lib/journey-store";
 import type { LifeEvent } from "@/lib/types";
@@ -19,8 +20,8 @@ export function EventCardGrid() {
   const [showMore, setShowMore] = useState(false);
 
   function handleSelect(event: LifeEvent) {
-    if (event.id === "got-married") {
-      const catalog = getJourneyByEventId("got-married");
+    if (isCivilStatusEvent(event.id)) {
+      const catalog = getJourneyByEventId(event.id);
       const stored = catalog ? getStoredJourney(catalog.id) : undefined;
       if (stored?.status === "completed") {
         // Already verified and completed once — no need to go through

@@ -44,6 +44,20 @@ describe("JourneyScreen", () => {
     );
   });
 
+  it("goes to the celebration screen once the annulment journey is fully complete", async () => {
+    render(<JourneyScreen eventId="annulment" />);
+    const catalog = getJourneyByEventId("annulment")!;
+    completeAllSteps(catalog.total_steps);
+
+    await waitFor(
+      () =>
+        expect(push).toHaveBeenCalledWith(
+          `/journey/complete?id=${encodeURIComponent(catalog.id)}`,
+        ),
+      { timeout: 1000 },
+    );
+  });
+
   it("goes to the celebration screen for a non-married journey", async () => {
     render(<JourneyScreen eventId="had-a-baby" />);
     const catalog = getJourneyByEventId("had-a-baby")!;

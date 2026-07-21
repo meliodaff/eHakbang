@@ -107,6 +107,16 @@ export const LIFE_EVENTS: LifeEvent[] = [
     description: "I moved to a new address and need to update my records.",
     common: false,
   },
+  {
+    id: "annulment",
+    emoji: "⚖️",
+    label: "Anulment ng Kasal",
+    sublabel: "Annulment",
+    short: "Annulment",
+    description:
+      "My marriage was recently annulled and I need to update my civil status records.",
+    common: false,
+  },
 ];
 
 export const COMMON_LIFE_EVENTS = LIFE_EVENTS.filter((e) => e.common);

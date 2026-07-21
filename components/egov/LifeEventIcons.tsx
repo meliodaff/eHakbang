@@ -125,6 +125,17 @@ function Moved() {
   );
 }
 
+function Annulment() {
+  return (
+    <svg viewBox="0 0 24 24" className={cls} fill="none" aria-hidden>
+      <path d="M12 3v4M12 3 6 6.5M12 3l6 3.5" {...s} />
+      <path d="M4.5 7 3 11a2.7 2.7 0 0 0 3 2.5A2.7 2.7 0 0 0 9 11L7.5 7" {...s} />
+      <path d="M16.5 7 15 11a2.7 2.7 0 0 0 3 2.5 2.7 2.7 0 0 0 3-2.5L19.5 7" {...s} />
+      <path d="M8 20h8M12 13.5V20" {...s} />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ReactNode> = {
   "got-married": <Married />,
   "had-a-baby": <Baby />,
@@ -137,6 +148,7 @@ const ICONS: Record<string, ReactNode> = {
   "just-graduated": <Graduated />,
   "first-job": <FirstJob />,
   "moved-residence": <Moved />,
+  annulment: <Annulment />,
 };
 
 /** Returns the monoline icon for a life-event id (falls back to a briefcase). */

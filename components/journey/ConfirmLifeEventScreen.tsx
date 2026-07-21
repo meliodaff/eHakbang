@@ -5,15 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EhakbangHeader } from "@/components/layout/EhakbangHeader";
 import { getLifeEventById } from "@/lib/events";
+import { getCivilStatusCopy } from "@/lib/civil-status-events";
 
 /**
- * First screen of the married-onboarding flow: confirms the user actually
- * just got married before asking for evidence and identity verification.
+ * First screen of the civil-status onboarding flow (marriage, annulment):
+ * confirms the life event actually happened before asking for evidence and
+ * identity verification.
  */
 export function ConfirmLifeEventScreen({ eventId }: { eventId?: string }) {
   const router = useRouter();
   const [declined, setDeclined] = useState(false);
   const event = eventId ? getLifeEventById(eventId) : undefined;
+  const copy = getCivilStatusCopy(eventId);
 
   function handleYes() {
     router.push(
@@ -31,18 +34,15 @@ export function ConfirmLifeEventScreen({ eventId }: { eventId?: string }) {
         </span>
         <div>
           <h1 className="text-xl font-bold text-foreground">
-            Did you just get married?
+            {copy.confirmQuestion}
           </h1>
-          <p className="mt-2 text-sm text-muted">
-            We&apos;ll help you update your civil status across government
-            agencies.
-          </p>
+          <p className="mt-2 text-sm text-muted">{copy.confirmDescription}</p>
         </div>
 
         {declined ? (
           <div className="flex w-full flex-col gap-3 rounded-egov bg-egov-blue-050 p-4">
             <p className="text-sm font-medium text-foreground">
-              This flow is for people who recently got married.
+              {copy.declinedMessage}
             </p>
             <Link
               href="/ehakbang"

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Journey } from "@/lib/types";
 import { EhakbangHeader } from "@/components/layout/EhakbangHeader";
 import { archiveJourney } from "@/lib/journey-store";
+import { isCivilStatusEvent, getCivilStatusTransition } from "@/lib/civil-status-events";
 import { useT } from "@/lib/i18n";
 
 function formatDate(iso: string | null): string {
@@ -33,6 +34,7 @@ export function CompletionCard({
 }) {
   const router = useRouter();
   const t = useT();
+  const transition = getCivilStatusTransition(journey.event_id);
 
   return (
     <main className="flex flex-1 flex-col bg-surface">
@@ -77,15 +79,17 @@ export function CompletionCard({
         </div>
       </dl>
 
-      {journey.event_id === "got-married" && journey.steps.length > 0 && (
+      {isCivilStatusEvent(journey.event_id) && journey.steps.length > 0 && (
         <div className="w-full max-w-xs rounded-egov bg-egov-success-bg p-4 text-left">
           <p className="text-sm font-semibold text-egov-success">
-            🎉 Civil status updated to Married on all {journey.steps.length}{" "}
-            IDs
+            🎉 Civil status updated to {transition.to} on all{" "}
+            {journey.steps.length} IDs
           </p>
           <ul className="mt-2 space-y-1 text-xs text-egov-success">
             {journey.steps.map((step) => (
-              <li key={step.step_number}>✓ {step.agency_name}: Married</li>
+              <li key={step.step_number}>
+                ✓ {step.agency_name}: {transition.to}
+              </li>
             ))}
           </ul>
         </div>
@@ -100,7 +104,7 @@ export function CompletionCard({
           >
             {t("Back to Home")}
           </button>
-        ) : journey.event_id === "got-married" ? (
+        ) : isCivilStatusEvent(journey.event_id) ? (
           <button
             type="button"
             onClick={() => router.push("/ehakbang")}

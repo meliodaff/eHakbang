@@ -4,17 +4,20 @@ import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EhakbangHeader } from "@/components/layout/EhakbangHeader";
 import { uploadEvidenceDocument } from "@/lib/api-client";
+import { getCivilStatusCopy } from "@/lib/civil-status-events";
 import { cn } from "@/lib/cn";
 
 /**
- * Second screen of the married-onboarding flow: attach evidence of the
- * marriage (e.g. a PSA marriage certificate) before identity verification.
+ * Second screen of the civil-status onboarding flow: attach evidence of the
+ * life event (e.g. a PSA marriage certificate or annulment decree) before
+ * identity verification.
  */
 export function DocumentUploadScreen({ eventId }: { eventId?: string }) {
   const router = useRouter();
   const inputId = useId();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const copy = getCivilStatusCopy(eventId);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setFile(e.target.files?.[0] ?? null);
@@ -38,12 +41,9 @@ export function DocumentUploadScreen({ eventId }: { eventId?: string }) {
       <div className="flex flex-1 flex-col gap-5 px-6 py-6">
         <div>
           <h1 className="text-xl font-bold text-foreground">
-            Attach proof of marriage
+            {copy.documentTitle}
           </h1>
-          <p className="mt-2 text-sm text-muted">
-            Upload a copy of your PSA marriage certificate or another
-            document showing your marriage, so we can verify your update.
-          </p>
+          <p className="mt-2 text-sm text-muted">{copy.documentDescription}</p>
         </div>
 
         <label

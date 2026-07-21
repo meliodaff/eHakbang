@@ -3,14 +3,15 @@
 import { useState } from "react";
 import type { Journey, JourneyStep } from "@/lib/types";
 import { applyMarriageTransaction } from "@/lib/api-client";
+import { isCivilStatusEvent, getCivilStatusTransition } from "@/lib/civil-status-events";
 import { cn } from "@/lib/cn";
 
 type Stage = "asking" | "declined" | "applying" | "done";
 
 /**
  * Offers to auto-submit the citizen's civil-status update to the remaining
- * agencies on their behalf, using the marriage certificate they already
- * uploaded — shown only on the "got-married" journey.
+ * agencies on their behalf, using the certificate/decree they already
+ * uploaded — shown only on civil-status journeys (marriage, annulment).
  */
 export function AutoApplyBanner({
   journey,
@@ -28,8 +29,9 @@ export function AutoApplyBanner({
   // Snapshotted when the user confirms, so rows don't vanish from the list
   // as `completed` updates live during the applying/done stages.
   const [applyingSteps, setApplyingSteps] = useState<JourneyStep[]>([]);
+  const transition = getCivilStatusTransition(journey.event_id);
 
-  const targetSteps = journey.event_id === "got-married" ? journey.steps : [];
+  const targetSteps = isCivilStatusEvent(journey.event_id) ? journey.steps : [];
   const pendingSteps = targetSteps.filter(
     (s) => !completed.includes(s.step_number),
   );
@@ -132,18 +134,18 @@ export function AutoApplyBanner({
                     Civil status:{" "}
                     {isSubmitted ? (
                       <span>
-                        <span className="line-through">Single</span>{" "}
+                        <span className="line-through">{transition.from}</span>{" "}
                         <span className="font-semibold text-egov-success">
-                          → Married
+                          → {transition.to}
                         </span>
                       </span>
                     ) : (
-                      "Single"
+                      transition.from
                     )}
                   </p>
                   {step.agency_code === "PHILSYS" && (
                     <p className="mt-1 text-xs italic text-muted">
-                      Example: Juana Dela Cruz → Juana Dela Cruz-Santos
+                      Example: {transition.surnameExample}
                     </p>
                   )}
                 </li>
@@ -154,7 +156,8 @@ export function AutoApplyBanner({
           {stage === "done" && (
             <>
               <p className="text-sm font-semibold text-egov-success">
-                🎉 Your civil status is now Married on all {applyingSteps.length}{" "}
+                🎉 Your civil status is now {transition.to} on all{" "}
+                {applyingSteps.length}{" "}
                 {applyingSteps.length === 1 ? "ID" : "IDs"}.
               </p>
               <p className="text-xs text-muted">

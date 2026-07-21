@@ -74,4 +74,48 @@ describe("CompletionCard", () => {
     );
     expect(push).toHaveBeenCalledWith("/ehakbang");
   });
+
+  it("for the annulment journey, shows only Continue to Dashboard with no archive/start-new prompts", () => {
+    render(<CompletionCard journey={{ ...journey, event_id: "annulment" }} />);
+    expect(
+      screen.queryByRole("button", { name: /start a new journey/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /archive this journey/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue to dashboard/i }),
+    );
+    expect(push).toHaveBeenCalledWith("/ehakbang");
+  });
+
+  it("shows the civil status result for an annulment journey with steps", () => {
+    render(
+      <CompletionCard
+        journey={{
+          ...journey,
+          event_id: "annulment",
+          steps: [
+            {
+              step_number: 1,
+              agency_name: "Social Security System",
+              agency_code: "SSS",
+              step_title: "Update civil status & beneficiaries",
+              step_type: "record_update",
+              reason: "",
+              documents_required: [],
+              estimated_time: "Same day",
+              important_note: null,
+              egov_service_name: "SSS Member Update",
+              egov_search_term: "SSS update civil status",
+            },
+          ],
+        }}
+      />,
+    );
+    expect(
+      screen.getByText(/civil status updated to single on all 1 ids/i),
+    ).toBeInTheDocument();
+  });
 });

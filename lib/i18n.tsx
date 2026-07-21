@@ -203,6 +203,7 @@ const FIL: Record<string, string> = {
   "Just Graduated": "Bagong Graduate",
   "Started First Job": "Unang Trabaho",
   "Moved Residence": "Lumipat ng Tirahan",
+  Annulment: "Anulment",
 
   // ── Journey summaries ─────────────────────────────────────
   "Update your civil status across all agencies so your spouse is recognized.":
@@ -227,6 +228,8 @@ const FIL: Record<string, string> = {
     "Kumpletuhin ang mga government registration na kakailanganin ng iyong unang employer.",
   "Update your address and voter registration to match your new home.":
     "I-update ang iyong address at voter registration para tumugma sa iyong bagong tahanan.",
+  "Update your civil status back to single across all agencies now that your marriage has been annulled.":
+    "I-update ang iyong civil status pabalik sa single sa lahat ng ahensya ngayong na-anul na ang iyong kasal.",
 
   // ── Estimated time ────────────────────────────────────────
   "Same day": "Sa loob ng araw",
@@ -241,6 +244,7 @@ const FIL: Record<string, string> = {
   "At discharge or within 60 days": "Sa discharge o sa loob ng 60 araw",
   "Subject to validation": "Depende sa validation",
   "Subject to registration schedule": "Depende sa iskedyul ng registration",
+  "2–6 weeks": "2–6 linggo",
 
   // ── Step titles ───────────────────────────────────────────
   "Update civil status & beneficiaries":
@@ -308,6 +312,12 @@ const FIL: Record<string, string> = {
   "Update your address on file": "I-update ang iyong address na naka-file",
   "Update National ID & driver's license address":
     "I-update ang address sa National ID at driver's license",
+  "Annotate your marriage certificate":
+    "I-annotate ang iyong marriage certificate",
+  "Remove your former spouse as dependent":
+    "Alisin ang dating asawa bilang dependent",
+  "Revert your surname on your National ID":
+    "Ibalik ang apelyido sa iyong National ID",
 
   // ── Step reasons ──────────────────────────────────────────
   "Ensures your spouse is recognized as a beneficiary.":
@@ -402,6 +412,14 @@ const FIL: Record<string, string> = {
     "Pinapanatiling tama ang contribution records at koreo.",
   "Keeps your primary IDs consistent with your residence.":
     "Pinapanatiling consistent ang mga pangunahing ID sa iyong tirahan.",
+  "The court decree must be annotated on your PSA marriage record before other agencies will recognize it.":
+    "Dapat i-annotate ang court decree sa iyong PSA marriage record bago ito kilalanin ng ibang ahensya.",
+  "Reverts your recognized civil status and beneficiary records to single.":
+    "Ibinabalik ang iyong nakilalang civil status at beneficiary records sa single.",
+  "Keeps your PhilHealth dependents accurate after the annulment.":
+    "Pinapanatiling tama ang iyong PhilHealth dependents matapos ang anulment.",
+  "Keeps your National ID consistent if you're reverting to your maiden/former surname.":
+    "Pinapanatiling consistent ang National ID kung babalik ka sa iyong dating apelyido.",
 
   // ── Important notes ───────────────────────────────────────
   "A non-working spouse can be a free dependent.":
@@ -436,4 +454,6 @@ const FIL: Record<string, string> = {
     "Nakadepende ang eligibility sa rekord ng miyembro.",
   "Only during COMELEC registration periods.":
     "Sa panahon lamang ng COMELEC registration.",
+  "Optional under Philippine law — only needed if you're changing your surname back.":
+    "Opsyonal sa ilalim ng batas ng Pilipinas — kailangan lang kung babalik ka sa iyong dating apelyido.",
 };

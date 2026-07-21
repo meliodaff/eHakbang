@@ -90,4 +90,29 @@ describe("EventCardGrid", () => {
       `/journey/complete?id=${encodeURIComponent(catalog.id)}&mode=info`,
     );
   });
+
+  it("routes the annulment event to the confirm flow instead of straight to the journey", () => {
+    render(<EventCardGrid />);
+    fireEvent.click(screen.getByRole("button", { name: /more events/i }));
+    const annulment = MORE_LIFE_EVENTS.find((e) => e.id === "annulment")!;
+    expect(annulment).toBeDefined();
+    fireEvent.click(screen.getByText(annulment.short));
+    expect(push).toHaveBeenCalledWith("/journey/confirm?event=annulment");
+  });
+
+  it("skips the confirm flow and goes straight to the read-only info view if the annulment journey is already completed", () => {
+    const catalog = getJourneyByEventId("annulment")!;
+    localStorage.setItem(
+      "ehakbang:journeys",
+      JSON.stringify([{ ...catalog, status: "completed" }]),
+    );
+
+    render(<EventCardGrid />);
+    fireEvent.click(screen.getByRole("button", { name: /more events/i }));
+    const annulment = MORE_LIFE_EVENTS.find((e) => e.id === "annulment")!;
+    fireEvent.click(screen.getByText(annulment.short));
+    expect(push).toHaveBeenCalledWith(
+      `/journey/complete?id=${encodeURIComponent(catalog.id)}&mode=info`,
+    );
+  });
 });

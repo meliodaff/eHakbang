@@ -54,4 +54,13 @@ describe("EventCardGrid", () => {
     fireEvent.click(screen.getByText(moved!.short));
     expect(push).toHaveBeenCalledWith("/journey/verify?event=moved-residence");
   });
+
+  it("routes the first-job event through the verification gate", () => {
+    render(<EventCardGrid />);
+    fireEvent.click(screen.getByRole("button", { name: /more events/i }));
+    const firstJob = MORE_LIFE_EVENTS.find((e) => e.id === "first-job");
+    expect(firstJob).toBeDefined();
+    fireEvent.click(screen.getByText(firstJob!.short));
+    expect(push).toHaveBeenCalledWith("/journey/verify?event=first-job");
+  });
 });

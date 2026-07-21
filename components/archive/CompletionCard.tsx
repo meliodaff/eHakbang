@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import type { Journey } from "@/lib/types";
-import { archiveJourney } from "@/lib/journey-store";
 import { EhakbangHeader } from "@/components/layout/EhakbangHeader";
 
 function formatDate(iso: string | null): string {
@@ -68,20 +67,10 @@ export function CompletionCard({ journey }: { journey: Journey }) {
       <div className="flex w-full max-w-xs flex-col gap-2">
         <button
           type="button"
-          onClick={() => {
-            archiveJourney(journey.id);
-            router.push("/journeys");
-          }}
+          onClick={() => router.push("/ehakbang")}
           className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
         >
-          Archive This Journey
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="min-h-12 rounded-egov border border-egov-blue px-5 py-3 font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
-        >
-          Start a New Journey
+          Continue to eHakbang Services
         </button>
       </div>
       </div>

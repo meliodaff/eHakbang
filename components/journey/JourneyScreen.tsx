@@ -12,7 +12,10 @@ import {
   markStepsDone,
 } from "@/lib/journey-store";
 import { useIdWallet, stepFulfilledByWallet } from "@/lib/id-wallet";
+import { eventSupportsApplyAll } from "@/lib/journey-features";
 import { JourneyView } from "./JourneyView";
+import { ApplyAllPrompt } from "./ApplyAllPrompt";
+import { ApplyAllModal } from "./ApplyAllModal";
 
 /**
  * Screen 2 controller. Loads the journey for the selected event (resuming
@@ -24,6 +27,12 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
   const router = useRouter();
   const [journey, setJourney] = useState<Journey | null>(null);
   const [ready, setReady] = useState(false);
+  // Tracks the graduate's "Apply All / No" decision for this session.
+  const [applyAllChoice, setApplyAllChoice] = useState<
+    "applied" | "declined" | null
+  >(null);
+  // Shows the submission-progress modal while "Apply All" runs.
+  const [showApplyModal, setShowApplyModal] = useState(false);
   const { heldIds, ready: walletReady } = useIdWallet();
 
   useEffect(() => {
@@ -84,6 +93,32 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
     router.push(`/journey/complete?id=${encodeURIComponent(updated.id)}`);
   }
 
+  // "Apply All": open the submission-progress modal. Actual completion is
+  // persisted when the modal finishes (see handleApplyAllFinished).
+  function handleApplyAll() {
+    setApplyAllChoice("applied");
+    setShowApplyModal(true);
+  }
+
+  // Called once the modal has "submitted" every step: mark all processes done,
+  // then route to the completion summary.
+  function handleApplyAllFinished() {
+    if (!journey) return;
+    const allSteps = journey.steps.map((s) => s.step_number);
+    const updated = markStepsDone(journey, [...allSteps, ...walletStepNumbers]);
+    setJourney(updated);
+    setShowApplyModal(false);
+    router.push(`/journey/complete?id=${encodeURIComponent(updated.id)}`);
+  }
+
+  // "No": dismiss the shortcut and use the normal one-by-one checklist.
+  function handleDeclineApplyAll() {
+    setApplyAllChoice("declined");
+  }
+
+  const supportsApplyAll = !!journey && eventSupportsApplyAll(journey.event_id);
+  const showApplyAll = supportsApplyAll && applyAllChoice === null && !allDone;
+
   if (!ready || !walletReady) {
     return (
       <main className="flex flex-1 items-center justify-center px-6 text-muted">
@@ -131,6 +166,15 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
         journey={journey}
         completed={effectiveCompleted}
         walletStepNumbers={walletStepNumbers}
+        afterHeader={
+          showApplyAll ? (
+            <ApplyAllPrompt
+              totalSteps={journey.total_steps}
+              onApplyAll={handleApplyAll}
+              onDecline={handleDeclineApplyAll}
+            />
+          ) : null
+        }
         onComplete={handleComplete}
       />
 
@@ -147,6 +191,13 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
             Tapusin ang journey
           </button>
         </div>
+      )}
+
+      {showApplyModal && (
+        <ApplyAllModal
+          steps={journey.steps}
+          onFinished={handleApplyAllFinished}
+        />
       )}
     </>
   );

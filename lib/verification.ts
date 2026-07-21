@@ -16,6 +16,7 @@
 export const VERIFICATION_REQUIRED_EVENT_IDS = [
   "just-graduated",
   "moved-residence",
+  "first-job",
 ] as const;
 
 /** True when the given life event must go through the verification gate. */
@@ -52,6 +53,12 @@ const VERIFICATION_COPY: Record<string, VerificationCopy> = {
     documentTitle: "I-verify ang iyong bagong tirahan",
     documentDescription:
       "Mag-upload ng patunay ng bagong address (hal. billing statement o barangay certificate) bago magpatuloy.",
+    uploadHint: "JPG, PNG, o PDF",
+  },
+  "first-job": {
+    documentTitle: "I-verify ang iyong trabaho",
+    documentDescription:
+      "Mag-upload ng patunay ng trabaho (hal. job offer o certificate of employment) bago magpatuloy.",
     uploadHint: "JPG, PNG, o PDF",
   },
 };

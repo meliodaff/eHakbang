@@ -14,6 +14,10 @@ describe("eventRequiresVerification", () => {
     expect(eventRequiresVerification("moved-residence")).toBe(true);
   });
 
+  it("requires verification for the first-job event", () => {
+    expect(eventRequiresVerification("first-job")).toBe(true);
+  });
+
   it("does not require verification for a standard event", () => {
     expect(eventRequiresVerification("got-married")).toBe(false);
   });
@@ -40,6 +44,10 @@ describe("getVerificationCopy", () => {
     expect(getVerificationCopy("moved-residence").documentTitle).toMatch(
       /tirahan/i,
     );
+  });
+
+  it("returns job-specific copy for the first-job event", () => {
+    expect(getVerificationCopy("first-job").documentTitle).toMatch(/trabaho/i);
   });
 
   it("falls back to generic copy for unknown / missing ids", () => {

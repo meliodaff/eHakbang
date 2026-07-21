@@ -35,15 +35,11 @@ describe("CompletionCard", () => {
     expect(screen.getByText("5 of 5")).toBeInTheDocument();
   });
 
-  it("archives to the journeys list", () => {
+  it("continues to the eHakbang services home", () => {
     render(<CompletionCard journey={journey} />);
-    fireEvent.click(screen.getByRole("button", { name: /archive this journey/i }));
-    expect(push).toHaveBeenCalledWith("/journeys");
-  });
-
-  it("starts a new journey from home", () => {
-    render(<CompletionCard journey={journey} />);
-    fireEvent.click(screen.getByRole("button", { name: /start a new journey/i }));
-    expect(push).toHaveBeenCalledWith("/");
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue to ehakbang services/i }),
+    );
+    expect(push).toHaveBeenCalledWith("/ehakbang");
   });
 });

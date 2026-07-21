@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Journey } from "@/lib/types";
 import { JourneySummaryHeader } from "./JourneySummaryHeader";
 import { ProgressBar } from "./ProgressBar";
@@ -11,17 +12,21 @@ export function JourneyView({
   journey,
   completed,
   walletStepNumbers = [],
+  afterHeader,
   onComplete,
 }: {
   journey: Journey;
   completed: number[];
   /** Step numbers satisfied by IDs already in the user's wallet. */
   walletStepNumbers?: number[];
+  /** Optional content rendered directly below the summary header. */
+  afterHeader?: ReactNode;
   onComplete: (stepNumber: number) => void;
 }) {
   return (
     <main className="flex flex-1 flex-col">
       <JourneySummaryHeader journey={journey} />
+      {afterHeader}
       <ProgressBar completed={completed.length} total={journey.total_steps} />
 
       <div className="flex flex-col gap-3 px-5 py-4">

@@ -102,6 +102,11 @@ export function markStepsDone(base: Journey, stepNumbers: number[]): Journey {
   return persist(base, [...existingCompletions(base), ...stepNumbers]);
 }
 
+/** Remove any stored journey for a given life-event id (e.g. "got-married"). */
+export function resetJourney(eventId: string): void {
+  write(read().filter((j) => j.event_id !== eventId));
+}
+
 export function archiveJourney(id: string): void {
   const list = read();
   const idx = list.findIndex((j) => j.id === id);

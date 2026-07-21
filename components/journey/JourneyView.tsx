@@ -3,6 +3,7 @@ import type { Journey } from "@/lib/types";
 import { JourneySummaryHeader } from "./JourneySummaryHeader";
 import { ProgressBar } from "./ProgressBar";
 import { StepCard } from "./StepCard";
+import { AutoApplyBanner } from "./AutoApplyBanner";
 
 /**
  * Presentational journey checklist. Completion state is owned by the
@@ -27,6 +28,11 @@ export function JourneyView({
     <main className="flex flex-1 flex-col">
       <JourneySummaryHeader journey={journey} />
       {afterHeader}
+      <AutoApplyBanner
+        journey={journey}
+        completed={completed}
+        onComplete={onComplete}
+      />
       <ProgressBar completed={completed.length} total={journey.total_steps} />
 
       <div className="flex flex-col gap-3 px-5 py-4">

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { COMMON_LIFE_EVENTS, MORE_LIFE_EVENTS } from "@/lib/events";
 import { eventRequiresVerification } from "@/lib/verification";
+import { getJourneyByEventId } from "@/lib/event-journeys";
+import { getStoredJourney } from "@/lib/journey-store";
 import type { LifeEvent } from "@/lib/types";
 import { EventCard } from "./EventCard";
 
@@ -17,6 +19,21 @@ export function EventCardGrid() {
   const [showMore, setShowMore] = useState(false);
 
   function handleSelect(event: LifeEvent) {
+    if (event.id === "got-married") {
+      const catalog = getJourneyByEventId("got-married");
+      const stored = catalog ? getStoredJourney(catalog.id) : undefined;
+      if (stored?.status === "completed") {
+        // Already verified and completed once — no need to go through
+        // confirm/document/face-verify again. Show the info read-only,
+        // without prompting to archive or start another journey.
+        router.push(
+          `/journey/complete?id=${encodeURIComponent(stored.id)}&mode=info`,
+        );
+        return;
+      }
+      router.push(`/journey/confirm?event=${encodeURIComponent(event.id)}`);
+      return;
+    }
     // Verification-gated events (e.g. Just Graduated) route through the
     // document + liveness flow before their journey checklist is shown.
     const target = eventRequiresVerification(event.id)

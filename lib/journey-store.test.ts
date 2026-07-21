@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { EVENT_JOURNEYS } from "./event-journeys";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { EVENT_JOURNEYS, getJourneyByEventId } from "./event-journeys";
 import {
   completeStep,
   getAllJourneys,
   getStoredJourney,
   markStepsDone,
+  resetJourney,
 } from "./journey-store";
 
 const KEY = "ehakbang:journeys";
@@ -12,6 +13,10 @@ const KEY = "ehakbang:journeys";
 describe("journey-store persistence", () => {
   beforeEach(() => {
     window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   it("starts with an empty store (clean slate)", () => {
@@ -72,5 +77,23 @@ describe("journey-store persistence", () => {
     expect(updated.completed_step_numbers.sort()).toEqual(all);
     expect(updated.status).toBe("completed");
     expect(updated.completed_at).not.toBeNull();
+  });
+
+  it("persists a journey once a step is completed", () => {
+    const catalog = getJourneyByEventId("got-married")!;
+    completeStep(catalog, 1);
+    expect(getStoredJourney(catalog.id)?.completed_step_numbers).toEqual([1]);
+  });
+
+  it("resetJourney removes only the matching event's stored journey", () => {
+    const married = getJourneyByEventId("got-married")!;
+    const baby = getJourneyByEventId("had-a-baby")!;
+    completeStep(married, 1);
+    completeStep(baby, 1);
+
+    resetJourney("got-married");
+
+    expect(getStoredJourney(married.id)).toBeUndefined();
+    expect(getStoredJourney(baby.id)?.completed_step_numbers).toEqual([1]);
   });
 });

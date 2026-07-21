@@ -1,4 +1,4 @@
-import type { Journey, Language } from "./types";
+import type { Journey, JourneyStep, Language } from "./types";
 import {
   MOCK_JOURNEYS,
   getActiveJourney,
@@ -44,4 +44,39 @@ export async function fetchJourney(id: string): Promise<Journey | undefined> {
 export async function listJourneys(): Promise<Journey[]> {
   const active = getActiveJourney();
   return active ? [active, ...getArchivedJourneys()] : getArchivedJourneys();
+}
+
+/**
+ * Submit evidence for a civil-status/life-event change (e.g. marriage
+ * certificate) for review.
+ * TODO(api): POST the file to a real document-upload endpoint.
+ */
+export async function uploadEvidenceDocument(
+  file: File,
+): Promise<{ fileName: string }> {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  return { fileName: file.name };
+}
+
+/**
+ * Verify the current user is who they claim to be before applying a
+ * sensitive change.
+ * TODO(api): replace with a real face-liveness verification call.
+ */
+export async function verifyFace(): Promise<{ verified: boolean }> {
+  await new Promise((resolve) => setTimeout(resolve, 1800));
+  return { verified: true };
+}
+
+/**
+ * Auto-apply a single record-update step on the citizen's behalf (e.g.
+ * submitting a civil-status update to an agency using their uploaded
+ * marriage certificate).
+ * TODO(api): POST this step's update to the real agency-submission endpoint.
+ */
+export async function applyMarriageTransaction(
+  step: JourneyStep,
+): Promise<{ stepNumber: number; submitted: boolean }> {
+  await new Promise((resolve) => setTimeout(resolve, 700));
+  return { stepNumber: step.step_number, submitted: true };
 }

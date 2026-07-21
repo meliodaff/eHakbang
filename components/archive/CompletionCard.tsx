@@ -18,13 +18,23 @@ function formatDate(iso: string | null): string {
  * Screen 3 — Journey Complete (PRD §10.4). Celebration state with the life
  * event, total steps completed, and completion date, plus archive / new
  * journey actions.
+ *
+ * `readOnly` renders the same info without the archive/start-new actions —
+ * used when revisiting an already-completed journey (e.g. re-tapping the
+ * "Married" tile) rather than landing here fresh right after finishing.
  */
-export function CompletionCard({ journey }: { journey: Journey }) {
+export function CompletionCard({
+  journey,
+  readOnly = false,
+}: {
+  journey: Journey;
+  readOnly?: boolean;
+}) {
   const router = useRouter();
 
   return (
     <main className="flex flex-1 flex-col bg-surface">
-      <EhakbangHeader backHref="/journeys" />
+      <EhakbangHeader backHref={readOnly ? "/ehakbang" : "/journeys"} />
       <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-10 text-center">
       <span
         className="flex h-20 w-20 items-center justify-center rounded-full bg-egov-success-bg text-4xl text-egov-success"
@@ -65,24 +75,58 @@ export function CompletionCard({ journey }: { journey: Journey }) {
         </div>
       </dl>
 
+      {journey.event_id === "got-married" && journey.steps.length > 0 && (
+        <div className="w-full max-w-xs rounded-egov bg-egov-success-bg p-4 text-left">
+          <p className="text-sm font-semibold text-egov-success">
+            🎉 Civil status updated to Married on all {journey.steps.length}{" "}
+            IDs
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-egov-success">
+            {journey.steps.map((step) => (
+              <li key={step.step_number}>✓ {step.agency_name}: Married</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="flex w-full max-w-xs flex-col gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            archiveJourney(journey.id);
-            router.push("/journeys");
-          }}
-          className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
-        >
-          Archive This Journey
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="min-h-12 rounded-egov border border-egov-blue px-5 py-3 font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
-        >
-          Start a New Journey
-        </button>
+        {readOnly ? (
+          <button
+            type="button"
+            onClick={() => router.push("/ehakbang")}
+            className="min-h-12 rounded-egov border border-egov-blue px-5 py-3 font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+          >
+            Back to Home
+          </button>
+        ) : journey.event_id === "got-married" ? (
+          <button
+            type="button"
+            onClick={() => router.push("/ehakbang")}
+            className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+          >
+            Continue to Dashboard
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                archiveJourney(journey.id);
+                router.push("/journeys");
+              }}
+              className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+            >
+              Archive This Journey
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="min-h-12 rounded-egov border border-egov-blue px-5 py-3 font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+            >
+              Start a New Journey
+            </button>
+          </>
+        )}
       </div>
       </div>
     </main>

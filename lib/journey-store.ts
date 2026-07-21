@@ -80,6 +80,11 @@ export function completeStep(base: Journey, stepNumber: number): Journey {
   return current;
 }
 
+/** Remove any stored journey for a given life-event id (e.g. "got-married"). */
+export function resetJourney(eventId: string): void {
+  write(read().filter((j) => j.event_id !== eventId));
+}
+
 export function archiveJourney(id: string): void {
   const list = read();
   const idx = list.findIndex((j) => j.id === id);

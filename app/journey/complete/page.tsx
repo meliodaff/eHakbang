@@ -8,9 +8,9 @@ export default async function JourneyCompletePage({
   searchParams,
 }: {
   // Next.js 16: searchParams is a Promise and must be awaited.
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string; mode?: string }>;
 }) {
-  const { id } = await searchParams;
+  const { id, mode } = await searchParams;
   const journey = id
     ? (getJourneyById(id) ?? getEventJourneyById(id))
     : undefined;
@@ -32,5 +32,5 @@ export default async function JourneyCompletePage({
     );
   }
 
-  return <CompletionCard journey={journey} />;
+  return <CompletionCard journey={journey} readOnly={mode === "info"} />;
 }

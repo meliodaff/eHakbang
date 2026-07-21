@@ -1,38 +1,69 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n";
 
-type Status = "idle" | "scanning" | "passed";
+type Status = "idle" | "loading" | "error";
 
 /**
- * Verification gate — Step 2 of 2 (PROTOTYPE).
+ * Verification gate — Step 2 of 2.
  *
- * A mocked liveness check meant to confirm the person present is the real user.
- * There is NO camera, NO biometric capture, and NO API — pressing "Start" just
- * simulates a short scan and auto-passes. See {@link ../../lib/verification.ts}
- * for the privacy caveat before wiring a real liveness provider.
+ * Redirects the user to the eGov Face Liveness page. On completion, the eGov
+ * page redirects back to /journey/liveness/callback where the result is checked.
  */
 export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
-  const router = useRouter();
   const t = useT();
   const [status, setStatus] = useState<Status>("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const nextHref = eventId
-    ? `/journey?event=${encodeURIComponent(eventId)}`
-    : "/journey";
+  async function startCheck() {
+    setStatus("loading");
+    setErrorMsg(null);
 
-  function startCheck() {
-    // STUB: mock liveness — auto-pass after a short simulated scan.
-    setStatus("scanning");
-    setTimeout(() => setStatus("passed"), 1500);
+    try {
+      // Build the callback URL (where eGov redirects after liveness check)
+      const callbackUrl = new URL(
+        "/journey/liveness/callback",
+        window.location.origin,
+      );
+      if (eventId) {
+        callbackUrl.searchParams.set("event", eventId);
+      }
+
+      // Create a liveness session via our server-side proxy
+      const res = await fetch("/api/liveness/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          callback_url: callbackUrl.toString(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to create liveness session");
+      }
+
+      const { token, url }: { token: string; url: string } = await res.json();
+
+      // Store the token in sessionStorage so the callback page can retrieve it
+      // even if eGov doesn't append it as a query param.
+      sessionStorage.setItem("ehakbang:liveness-token", token);
+
+      // Redirect the user to the eGov face liveness page
+      window.location.href = url;
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(
+        err instanceof Error ? err.message : "Something went wrong",
+      );
+    }
   }
 
   return (
     <main className="flex flex-1 flex-col gap-5 px-6 py-6">
       <p className="text-xs font-semibold uppercase tracking-wide text-egov-blue">
-        {t("Verification · Step 2 of 2")}
+        {t("Verification \u00b7 Step 2 of 2")}
       </p>
 
       <div className="flex flex-col gap-2">
@@ -50,55 +81,41 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
           <>
             <span aria-hidden className="text-5xl">📷</span>
             <span className="text-muted">
-              {t("Face the camera and press “Start”.")}
+              {t("Press \u201cStart\u201d to begin face verification.")}
             </span>
           </>
         )}
-        {status === "scanning" && (
+        {status === "loading" && (
           <>
             <span aria-hidden className="text-5xl motion-safe:animate-pulse">🔍</span>
             <span className="font-semibold text-egov-blue">
-              {t("Scanning… please hold still.")}
+              {t("Connecting\u2026 please wait.")}
             </span>
           </>
         )}
-        {status === "passed" && (
+        {status === "error" && (
           <>
-            <span aria-hidden className="text-5xl">✅</span>
-            <span className="font-semibold text-egov-success">
-              {t("Identity verified")}
+            <span aria-hidden className="text-5xl">❌</span>
+            <span className="font-semibold text-red-500">
+              {errorMsg ?? t("Something went wrong")}
             </span>
           </>
         )}
       </div>
 
       <div className="mt-auto flex flex-col gap-3">
-        <p className="rounded-egov bg-egov-warning-bg px-4 py-3 text-sm text-egov-warning">
-          {t(
-            "Demo only: no camera or biometric is captured. This check passes automatically.",
-          )}
-        </p>
-
-        {status !== "passed" ? (
-          <button
-            type="button"
-            disabled={status === "scanning"}
-            onClick={startCheck}
-            className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {status === "scanning"
-              ? t("Scanning… please hold still.")
+        <button
+          type="button"
+          disabled={status === "loading"}
+          onClick={startCheck}
+          className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {status === "loading"
+            ? t("Connecting\u2026 please wait.")
+            : status === "error"
+              ? t("Try Again")
               : t("Start liveness check")}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => router.push(nextHref)}
-            className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
-          >
-            {t("Continue journey")}
-          </button>
-        )}
+        </button>
       </div>
     </main>
   );

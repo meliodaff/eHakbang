@@ -59,13 +59,37 @@ export async function uploadEvidenceDocument(
 }
 
 /**
- * Verify the current user is who they claim to be before applying a
- * sensitive change.
- * TODO(api): replace with a real face-liveness verification call.
+ * Create a liveness session and return the verification URL to redirect to.
+ * Uses the server-side proxy at /api/liveness/session.
  */
-export async function verifyFace(): Promise<{ verified: boolean }> {
-  await new Promise((resolve) => setTimeout(resolve, 1800));
-  return { verified: true };
+export async function verifyFace(
+  callbackUrl: string,
+): Promise<{ token: string; url: string }> {
+  const res = await fetch("/api/liveness/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ callback_url: callbackUrl }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to create liveness session");
+  }
+  return res.json();
+}
+
+/**
+ * Fetch the liveness verification result for a completed session.
+ * Uses the server-side proxy at /api/liveness/result/[token].
+ */
+export async function fetchLivenessResult(
+  token: string,
+): Promise<{ status: string; confidence_score: number; verified: boolean }> {
+  const res = await fetch(`/api/liveness/result/${encodeURIComponent(token)}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to fetch liveness result");
+  }
+  return res.json();
 }
 
 /**

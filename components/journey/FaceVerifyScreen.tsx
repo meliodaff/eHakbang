@@ -1,33 +1,65 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { EhakbangHeader } from "@/components/layout/EhakbangHeader";
-import { verifyFace } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
 
-type VerifyState = "idle" | "scanning" | "verified";
+type VerifyState = "idle" | "loading" | "error";
 
 /**
- * Third screen of the married-onboarding flow: confirms it's really the user
- * making this civil-status change.
- *
- * Mocked for now — {@link verifyFace} always succeeds after a short simulated
- * delay. Swap its implementation for a real face-liveness API later; this
- * component doesn't need to change.
+ * Third screen of the civil-status onboarding flow: redirects the user to the
+ * eGov Face Liveness verification page. On completion, the eGov page redirects
+ * back to /journey/confirm/verify/callback where the result is checked.
  */
 export function FaceVerifyScreen({ eventId }: { eventId?: string }) {
-  const router = useRouter();
   const [state, setState] = useState<VerifyState>("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function handleStart() {
-    setState("scanning");
-    await verifyFace();
-    setState("verified");
-  }
+    setState("loading");
+    setErrorMsg(null);
 
-  function handleContinue() {
-    router.push(`/journey?event=${encodeURIComponent(eventId ?? "")}`);
+    try {
+      // Build the callback URL (where eGov redirects after liveness check).
+      // We include the token in the URL after session creation so the callback
+      // page can retrieve the result from the eGov API.
+      const callbackBase = new URL(
+        "/journey/confirm/verify/callback",
+        window.location.origin,
+      );
+      if (eventId) {
+        callbackBase.searchParams.set("event", eventId);
+      }
+
+      // Create a liveness session via our server-side proxy.
+      // We pass a placeholder callback_url first, then reconstruct it with the token.
+      const res = await fetch("/api/liveness/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          callback_url: callbackBase.toString(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to create liveness session");
+      }
+
+      const { token, url }: { token: string; url: string } = await res.json();
+
+      // Store the token in sessionStorage so the callback page can retrieve it
+      // even if eGov doesn't append it as a query param.
+      sessionStorage.setItem("ehakbang:liveness-token", token);
+
+      // Redirect the user to the eGov face liveness page
+      window.location.href = url;
+    } catch (err) {
+      setState("error");
+      setErrorMsg(
+        err instanceof Error ? err.message : "Something went wrong",
+      );
+    }
   }
 
   return (
@@ -51,37 +83,31 @@ export function FaceVerifyScreen({ eventId }: { eventId?: string }) {
           className={cn(
             "flex h-40 w-40 items-center justify-center rounded-full border-4 text-5xl transition-colors",
             state === "idle" && "border-egov-blue-100 text-muted",
-            state === "scanning" && "animate-pulse border-egov-blue text-egov-blue",
-            state === "verified" &&
-              "border-egov-success bg-egov-success-bg text-egov-success",
+            state === "loading" &&
+              "animate-pulse border-egov-blue text-egov-blue",
+            state === "error" && "border-red-400 bg-red-50 text-red-500",
           )}
           aria-hidden
         >
-          {state === "verified" ? "✓" : "🙂"}
+          {state === "error" ? "\u2717" : "\uD83D\uDE42"}
         </div>
 
-        {state === "verified" && (
-          <p className="font-semibold text-egov-success">Identity Verified</p>
+        {state === "error" && errorMsg && (
+          <p className="text-sm font-medium text-red-500">{errorMsg}</p>
         )}
 
-        {state === "verified" ? (
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="min-h-11 w-full rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
-          >
-            Continue
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleStart}
-            disabled={state === "scanning"}
-            className="min-h-11 w-full rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:bg-border disabled:text-muted"
-          >
-            {state === "scanning" ? "Scanning…" : "Start Face Verification"}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleStart}
+          disabled={state === "loading"}
+          className="min-h-11 w-full rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:bg-border disabled:text-muted"
+        >
+          {state === "loading"
+            ? "Connecting\u2026"
+            : state === "error"
+              ? "Try Again"
+              : "Start Face Verification"}
+        </button>
       </div>
     </main>
   );

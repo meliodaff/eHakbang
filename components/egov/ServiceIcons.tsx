@@ -156,3 +156,13 @@ export function InfoIcon() {
     </svg>
   );
 }
+
+export function IdCardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={base} fill="none" aria-hidden>
+      <rect x="3" y="5" width="18" height="14" rx="2.2" {...stroke} />
+      <circle cx="8.5" cy="11" r="2" {...stroke} />
+      <path d="M5.8 16a2.8 2.8 0 0 1 5.4 0M14 9.5h4M14 13h3" {...stroke} />
+    </svg>
+  );
+}

@@ -10,10 +10,13 @@ import { StepCard } from "./StepCard";
 export function JourneyView({
   journey,
   completed,
+  walletStepNumbers = [],
   onComplete,
 }: {
   journey: Journey;
   completed: number[];
+  /** Step numbers satisfied by IDs already in the user's wallet. */
+  walletStepNumbers?: number[];
   onComplete: (stepNumber: number) => void;
 }) {
   return (
@@ -27,6 +30,7 @@ export function JourneyView({
             key={step.step_number}
             step={step}
             completed={completed.includes(step.step_number)}
+            walletFulfilled={walletStepNumbers.includes(step.step_number)}
             onComplete={onComplete}
           />
         ))}

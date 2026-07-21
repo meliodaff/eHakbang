@@ -102,12 +102,20 @@ function TabStub({ label, icon }: { label: string; icon: React.ReactNode }) {
   );
 }
 
-function Fab({ label }: { label: string }) {
+function Fab({
+  label,
+  href = "/ehakbang",
+  ariaLabel = "Open eHakbang",
+}: {
+  label: string;
+  href?: string;
+  ariaLabel?: string;
+}) {
   return (
     <div className="relative flex flex-1 flex-col items-center justify-end pb-1.5">
       <Link
-        href="/ehakbang"
-        aria-label="Open E-Hakbang"
+        href={href}
+        aria-label={ariaLabel}
         className="absolute -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-egov-blue text-white shadow-lg ring-4 ring-surface transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
       >
         <IdIcon />
@@ -131,7 +139,7 @@ export function BottomTabBar() {
         <>
           <TabLink href="/" label="Home" icon={<HomeIcon />} active />
           <TabStub label="Scan QR" icon={<ScanIcon />} />
-          <Fab label="Digital ID" />
+          <Fab label="Digital ID" href="/wallet" ariaLabel="Open my ID Wallet" />
           <TabStub label="History" icon={<HistoryIcon />} />
           <TabStub label="Account" icon={<AccountIcon />} />
         </>

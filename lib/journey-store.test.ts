@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { EVENT_JOURNEYS } from "./event-journeys";
-import { completeStep, getAllJourneys, getStoredJourney } from "./journey-store";
+import {
+  completeStep,
+  getAllJourneys,
+  getStoredJourney,
+  markStepsDone,
+} from "./journey-store";
 
 const KEY = "ehakbang:journeys";
 
@@ -49,5 +54,23 @@ describe("journey-store persistence", () => {
     }
     expect(current.status).toBe("completed");
     expect(current.completed_at).not.toBeNull();
+  });
+
+  it("folds wallet-satisfied steps in via completeStep's alsoComplete", () => {
+    const catalog = EVENT_JOURNEYS["first-job"];
+    // Suppose the user already holds SSS + Pag-IBIG (steps 2 and 4), then
+    // manually completes step 1. All of 1,2,4 should be recorded.
+    const updated = completeStep({ ...catalog }, 1, [2, 4]);
+    expect(updated.completed_step_numbers.sort()).toEqual([1, 2, 4]);
+    expect(updated.status).toBe("active");
+  });
+
+  it("markStepsDone completes a journey when it covers every step", () => {
+    const catalog = EVENT_JOURNEYS["first-job"];
+    const all = catalog.steps.map((s) => s.step_number);
+    const updated = markStepsDone({ ...catalog }, all);
+    expect(updated.completed_step_numbers.sort()).toEqual(all);
+    expect(updated.status).toBe("completed");
+    expect(updated.completed_at).not.toBeNull();
   });
 });

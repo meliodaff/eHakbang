@@ -1,5 +1,5 @@
 /**
- * Greeting card (eGov home pattern). E-Hakbang collects no personal data, so
+ * Greeting card (eGov home pattern). eHakbang collects no personal data, so
  * instead of a user's name/number it shows a warm, generic greeting and a
  * decorative panel (original artwork — not copied from any app).
  */

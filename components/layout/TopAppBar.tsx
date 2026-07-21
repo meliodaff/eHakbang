@@ -5,7 +5,7 @@ import { EhakbangLogo } from "@/components/brand/Logo";
 
 /**
  * eGov-style top app bar: brand logo on the left, language toggle + info
- * action on the right, with an optional back button. Reused by the E-Hakbang
+ * action on the right, with an optional back button. Reused by the eHakbang
  * service screens.
  */
 export function TopAppBar({
@@ -56,7 +56,7 @@ export function TopAppBar({
         <LanguageToggle />
         <Link
           href="/about"
-          aria-label="About E-Hakbang"
+          aria-label="About eHakbang"
           className="flex h-10 w-10 items-center justify-center rounded-full text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
         >
           <svg viewBox="0 0 24 24" aria-hidden className="h-6 w-6" fill="none">

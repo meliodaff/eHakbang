@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "E-Hakbang — Your step-by-step government journey",
+  title: "eHakbang — Your step-by-step government journey",
   description:
     "AI-powered government journey planner for Filipino citizens. Get an ordered, personalized checklist of government steps after a life event — no login, no personal data collected.",
-  applicationName: "E-Hakbang",
+  applicationName: "eHakbang",
 };
 
 export const viewport: Viewport = {

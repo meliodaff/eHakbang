@@ -45,39 +45,61 @@ export function getStoredJourney(id: string): Journey | undefined {
 }
 
 /**
+ * Persist a journey with the given set of completed step numbers, creating the
+ * record on first engagement. Completion status/date are derived from whether
+ * every step is done.
+ */
+function persist(base: Journey, completedNumbers: number[]): Journey {
+  const list = read();
+  const idx = list.findIndex((j) => j.id === base.id);
+  const source = idx >= 0 ? list[idx] : base;
+  const merged = Array.from(new Set(completedNumbers));
+
+  const record: Journey = {
+    ...source,
+    status: "active",
+    created_at: source.created_at || new Date().toISOString(),
+    completed_at: null,
+    completed_step_numbers: merged,
+  };
+  if (merged.length >= record.total_steps && record.total_steps > 0) {
+    record.status = "completed";
+    record.completed_at = new Date().toISOString();
+  }
+
+  if (idx < 0) list.unshift(record);
+  else list[idx] = record;
+  write(list);
+  return record;
+}
+
+/** Completions already persisted for this journey (or the base's own set). */
+function existingCompletions(base: Journey): number[] {
+  return getStoredJourney(base.id)?.completed_step_numbers ?? base.completed_step_numbers;
+}
+
+/**
  * Mark a step complete, persisting the journey on first engagement.
  * `base` is the journey being viewed (from the catalog or the store).
+ *
+ * `alsoComplete` lets callers fold in steps that are satisfied by other means
+ * (e.g. IDs already held in the user's ID wallet) so progress and completion
+ * stay accurate.
  */
-export function completeStep(base: Journey, stepNumber: number): Journey {
-  const list = read();
-  let idx = list.findIndex((j) => j.id === base.id);
+export function completeStep(
+  base: Journey,
+  stepNumber: number,
+  alsoComplete: number[] = [],
+): Journey {
+  return persist(base, [...existingCompletions(base), ...alsoComplete, stepNumber]);
+}
 
-  if (idx < 0) {
-    // First engagement — persist as an active journey.
-    list.unshift({
-      ...base,
-      status: "active",
-      created_at: base.created_at || new Date().toISOString(),
-      completed_at: null,
-      completed_step_numbers: [...base.completed_step_numbers],
-    });
-    idx = 0;
-  }
-
-  const current = { ...list[idx] };
-  if (!current.completed_step_numbers.includes(stepNumber)) {
-    current.completed_step_numbers = [
-      ...current.completed_step_numbers,
-      stepNumber,
-    ];
-  }
-  if (current.completed_step_numbers.length >= current.total_steps) {
-    current.status = "completed";
-    current.completed_at = new Date().toISOString();
-  }
-  list[idx] = current;
-  write(list);
-  return current;
+/**
+ * Mark several steps complete at once (persisting on first engagement).
+ * Used to fold ID-wallet–satisfied steps into a journey without a manual tap.
+ */
+export function markStepsDone(base: Journey, stepNumbers: number[]): Journey {
+  return persist(base, [...existingCompletions(base), ...stepNumbers]);
 }
 
 export function archiveJourney(id: string): void {

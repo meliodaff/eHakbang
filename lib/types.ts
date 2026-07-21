@@ -1,5 +1,5 @@
 /**
- * E-Hakbang data model.
+ * eHakbang data model.
  *
  * The `JourneyStep` and generated journey fields mirror the Claude API
  * response schema defined in the PRD (§9.1.2). App-level fields (id, status,
@@ -14,6 +14,22 @@ export type JourneyStatus = "active" | "completed" | "archived";
 
 /** UI + Claude prompt language preference. */
 export type Language = "fil" | "en";
+
+/**
+ * Government-issued IDs / memberships a citizen can hold in their ID wallet.
+ * Used to auto-satisfy journey steps whose purpose is to obtain that ID.
+ */
+export type IdType =
+  | "tin"
+  | "sss"
+  | "philhealth"
+  | "pagibig"
+  | "umid"
+  | "philsys"
+  | "passport"
+  | "drivers-license"
+  | "voters-id"
+  | "prc";
 
 /** One ordered government action. Mirrors PRD §9.1.2 `steps[]`. */
 export interface JourneyStep {
@@ -38,6 +54,12 @@ export interface JourneyStep {
    * Optional in the UI-only phase — falls back to the agency homepage.
    */
   egov_url?: string;
+  /**
+   * When set, completing this step obtains/updates the given government ID.
+   * If the citizen already holds that ID in their ID wallet, the step is
+   * auto-satisfied (marked done dynamically without manual action).
+   */
+  fulfills_id?: IdType;
 }
 
 /**

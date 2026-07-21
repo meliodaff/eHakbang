@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 
 /**
- * E-Hakbang logo mark — an app-icon badge with ascending steps ("hakbang")
+ * eHakbang logo mark — an app-icon badge with ascending steps ("hakbang")
  * climbing toward a goal dot: step-by-step progress through government.
  * Original artwork.
  */
@@ -11,7 +11,7 @@ export function EhakbangMark({ className }: { className?: string }) {
       viewBox="0 0 48 48"
       className={className}
       role="img"
-      aria-label="E-Hakbang"
+      aria-label="eHakbang"
     >
       <defs>
         <linearGradient id="eh-mark-grad" x1="0" y1="0" x2="1" y2="1">
@@ -33,7 +33,7 @@ export function EhakbangMark({ className }: { className?: string }) {
 }
 
 /**
- * Full horizontal lockup: mark + "E-Hakbang" wordmark.
+ * Full horizontal lockup: mark + "eHakbang" wordmark.
  * `onDark` switches the wordmark to white for use on blue headers.
  */
 export function EhakbangLogo({

@@ -15,10 +15,13 @@ import { AskAboutStep } from "./AskAboutStep";
 export function StepCard({
   step,
   completed,
+  walletFulfilled = false,
   onComplete,
 }: {
   step: JourneyStep;
   completed: boolean;
+  /** True when this step is satisfied by an ID already in the user's wallet. */
+  walletFulfilled?: boolean;
   onComplete: (stepNumber: number) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -96,9 +99,15 @@ export function StepCard({
         </a>
 
         {completed ? (
-          <p className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov bg-egov-success-bg px-4 py-2.5 text-sm font-semibold text-egov-success">
-            <span aria-hidden>✓</span> Completed
-          </p>
+          walletFulfilled ? (
+            <p className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov bg-egov-success-bg px-4 py-2.5 text-center text-sm font-semibold text-egov-success">
+              <span aria-hidden>🪪</span> Meron ka na nito — nasa iyong ID Wallet
+            </p>
+          ) : (
+            <p className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov bg-egov-success-bg px-4 py-2.5 text-sm font-semibold text-egov-success">
+              <span aria-hidden>✓</span> Completed
+            </p>
+          )
         ) : confirming ? (
           <div className="flex flex-col gap-2 rounded-egov bg-background p-3">
             <p className="text-sm font-semibold text-foreground">

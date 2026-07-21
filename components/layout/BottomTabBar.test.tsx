@@ -26,15 +26,23 @@ describe("BottomTabBar", () => {
     expect(screen.getByRole("button", { name: /account/i })).toBeInTheDocument();
   });
 
-  it("always exposes the E-Hakbang launcher FAB", () => {
+  it("links the Digital ID FAB to the ID wallet on the home route", () => {
     mockUsePathname.mockReturnValue("/");
     render(<BottomTabBar />);
     expect(
-      screen.getByRole("link", { name: /open e-hakbang/i }),
+      screen.getByRole("link", { name: /open my id wallet/i }),
+    ).toHaveAttribute("href", "/wallet");
+  });
+
+  it("exposes the eHakbang launcher FAB inside the service", () => {
+    mockUsePathname.mockReturnValue("/journey");
+    render(<BottomTabBar />);
+    expect(
+      screen.getByRole("link", { name: /open ehakbang/i }),
     ).toHaveAttribute("href", "/ehakbang");
   });
 
-  it("shows functional E-Hakbang tabs inside the service", () => {
+  it("shows functional eHakbang tabs inside the service", () => {
     mockUsePathname.mockReturnValue("/journey");
     render(<BottomTabBar />);
     expect(screen.getByRole("link", { name: /home/i })).toBeInTheDocument();

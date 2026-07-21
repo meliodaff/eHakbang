@@ -44,14 +44,15 @@ export default function Home() {
                 Mabuhay, Kababayan!
               </p>
               <p className="text-[11px] leading-tight text-muted">
-                Welcome to E-Hakbang
+                Welcome to eHakbang
               </p>
             </div>
-            <span
-              aria-hidden
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-egov-blue-050 text-egov-blue"
+            <Link
+              href="/wallet"
+              aria-label="Open my ID Wallet"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-egov-blue-050 text-egov-blue transition-colors hover:bg-egov-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+              <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5" fill="none">
                 <circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.7" />
                 <path
                   d="M5 19a7 7 0 0 1 14 0"
@@ -60,7 +61,7 @@ export default function Home() {
                   strokeLinecap="round"
                 />
               </svg>
-            </span>
+            </Link>
           </div>
         </div>
 
@@ -76,7 +77,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Search bar — opens E-Hakbang */}
+      {/* Search bar — opens eHakbang */}
       <div className="px-5 pt-2">
         <Link
           href="/ehakbang"
@@ -93,17 +94,17 @@ export default function Home() {
         </Link>
       </div>
 
-      {/* Horizontal service icons (E-Hakbang first + representative) */}
+      {/* Horizontal service icons (eHakbang first + representative) */}
       <div className="mt-4">
         <div className="flex gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <ServiceTile icon={<EhakbangIcon />} label="E-Hakbang" href="/ehakbang" badge="New" />
+          <ServiceTile icon={<EhakbangIcon />} label="eHakbang" href="/ehakbang" badge="New" />
           {SERVICES.map((s) => (
             <ServiceTile key={s.label} icon={s.icon} label={s.label} badge={s.badge} />
           ))}
         </div>
       </div>
 
-      {/* Carousel-style banner — E-Hakbang promo */}
+      {/* Carousel-style banner — eHakbang promo */}
       <div className="mt-4 px-5">
         <EhakbangFeatureCard />
         <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
@@ -183,7 +184,7 @@ export default function Home() {
       </section>
 
       <p className="mt-6 px-5 text-center text-[11px] text-muted">
-        Demo host dashboard. E-Hakbang is the active service — tap it above to
+        Demo host dashboard. eHakbang is the active service — tap it above to
         begin.
       </p>
 

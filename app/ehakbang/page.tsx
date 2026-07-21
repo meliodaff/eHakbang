@@ -37,10 +37,10 @@ export default function EhakbangHome() {
         <EventCardGrid />
       </div>
 
-      {/* Why E-Hakbang — tinted info cards */}
-      <section aria-label="Why E-Hakbang" className="mt-6 px-5">
+      {/* Why eHakbang — tinted info cards */}
+      <section aria-label="Why eHakbang" className="mt-6 px-5">
         <h2 className="mb-3 text-base font-bold text-foreground">
-          Why E-Hakbang
+          Why eHakbang
         </h2>
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-egov bg-egov-blue-050 p-4">

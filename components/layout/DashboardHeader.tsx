@@ -13,7 +13,7 @@ export function DashboardHeader() {
           <span aria-hidden className="text-base">
             🇵🇭
           </span>
-          <span>E-Hakbang</span>
+          <span>eHakbang</span>
         </div>
         <LanguageToggle />
       </div>

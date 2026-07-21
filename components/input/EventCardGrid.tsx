@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { COMMON_LIFE_EVENTS, MORE_LIFE_EVENTS } from "@/lib/events";
+import { eventRequiresVerification } from "@/lib/verification";
 import type { LifeEvent } from "@/lib/types";
 import { EventCard } from "./EventCard";
 
@@ -16,7 +17,12 @@ export function EventCardGrid() {
   const [showMore, setShowMore] = useState(false);
 
   function handleSelect(event: LifeEvent) {
-    router.push(`/journey?event=${encodeURIComponent(event.id)}`);
+    // Verification-gated events (e.g. Just Graduated) route through the
+    // document + liveness flow before their journey checklist is shown.
+    const target = eventRequiresVerification(event.id)
+      ? `/journey/verify?event=${encodeURIComponent(event.id)}`
+      : `/journey?event=${encodeURIComponent(event.id)}`;
+    router.push(target);
   }
 
   return (

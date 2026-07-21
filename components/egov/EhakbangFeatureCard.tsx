@@ -2,7 +2,7 @@ import Link from "next/link";
 import { EhakbangIcon } from "./ServiceIcons";
 
 /**
- * Carousel-style banner promoting the E-Hakbang service, styled like the eGov
+ * Carousel-style banner promoting the eHakbang service, styled like the eGov
  * home banners: a light card with a title block and a decorative panel.
  * (Original artwork — not copied from any app.) Links to the planner.
  */
@@ -14,7 +14,7 @@ export function EhakbangFeatureCard() {
     >
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-sm font-extrabold tracking-tight text-egov-blue">
-          E-Hakbang
+          eHakbang
           <span className="rounded bg-egov-yellow px-1 py-0.5 text-[9px] font-bold leading-none text-egov-navy">
             AI
           </span>

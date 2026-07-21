@@ -8,6 +8,7 @@ import {
   ListIcon,
   ArrowRightIcon,
   InfoIcon,
+  IdCardIcon,
   JobsIcon,
   HealthIcon,
 } from "@/components/egov/ServiceIcons";
@@ -37,6 +38,7 @@ export function EhakbangActiveSection() {
       <div className="mt-4">
         <div className="flex gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ServiceTile icon={<ListIcon />} label="My Journeys" href="/journeys" />
+          <ServiceTile icon={<IdCardIcon />} label="My IDs" href="/wallet" />
           {active && (
             <ServiceTile
               icon={<ArrowRightIcon />}

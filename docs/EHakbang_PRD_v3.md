@@ -1,4 +1,4 @@
-# E-HAKBANG — Product Requirements Document
+# eHakbang — Product Requirements Document
 
 **Electronic — Hakbang sa Gobyerno**
 *"Your step-by-step government journey, now automated."*
@@ -6,20 +6,20 @@
 | | |
 |---|---|
 | **Document Type** | Product Requirements Document (PRD) |
-| **Product Name** | E-Hakbang |
+| **Product Name** | eHakbang |
 | **Version** | 3.0 — Automation Update (supersedes v2.0) |
 | **Status** | ACTIVE — For Team Development |
 | **Platform** | Web Application (Mobile-First) |
 | **Event** | eGov PH Hackathon 2025 |
 | **Submitted To** | DICT — Department of Information and Communications Technology |
 
-> **What changed from v2.0:** v2.0 defined E-Hakbang as a *guide* that generates an ordered checklist and links the citizen to official services (manual completion, zero data collected). v3.0 adds an **opt-in Automation Engine** that carries out the journey on the citizen's behalf using **eGov API integrations**, while keeping the guided/manual mode as the default fallback. The "zero data" model is replaced by a **consent-based, data-minimizing** model.
+> **What changed from v2.0:** v2.0 defined eHakbang as a *guide* that generates an ordered checklist and links the citizen to official services (manual completion, zero data collected). v3.0 adds an **opt-in Automation Engine** that carries out the journey on the citizen's behalf using **eGov API integrations**, while keeping the guided/manual mode as the default fallback. The "zero data" model is replaced by a **consent-based, data-minimizing** model.
 
 ---
 
 ## 1. Executive Summary
 
-E-Hakbang is a web-based, AI-powered **government journey planner and automation assistant** for Filipino citizens. After any significant life event — getting married, having a baby, losing a job, retiring, becoming a PWD or senior, starting a business, or a death in the family — E-Hakbang:
+eHakbang is a web-based, AI-powered **government journey planner and automation assistant** for Filipino citizens. After any significant life event — getting married, having a baby, losing a job, retiring, becoming a PWD or senior, starting a business, or a death in the family — eHakbang:
 
 1. **Generates** a fully ordered, personalized checklist of government steps (reason, documents, step type, official link), and
 2. **Optionally automates** those steps end-to-end — preparing forms, paying fees, notifying the citizen, and anchoring tamper-evident receipts — through integrated eGov PH APIs.
@@ -27,7 +27,7 @@ E-Hakbang is a web-based, AI-powered **government journey planner and automation
 Automation is a **reusable, life-event-agnostic engine**: the same pipeline runs against whatever steps a given life event produces. Pregnancy / "had a baby" is the primary worked example and demo scenario, but the engine applies to every life event.
 
 ### Core Value Proposition
-> "Filipinos don't know what to do after a life change — and even when they do, the process is slow and fragmented. E-Hakbang tells them the right steps in the right order, then does the paperwork for them."
+> "Filipinos don't know what to do after a life change — and even when they do, the process is slow and fragmented. eHakbang tells them the right steps in the right order, then does the paperwork for them."
 
 ---
 
@@ -47,7 +47,7 @@ To become the single trusted starting point for every Filipino navigating govern
 | Principle | Description |
 |---|---|
 | Zero friction | A non-tech user completes (or automates) a journey without external help. |
-| No sign-in | No account or login is required to use E-Hakbang. |
+| No sign-in | No account or login is required to use eHakbang. |
 | Data minimization | Only data required by a selected step is collected, only at the moment it is needed, with explicit consent. Nothing is stored server-side beyond what an in-flight transaction requires. |
 | Guided by default, automated by choice | Manual checklist is the default; automation is explicitly opted into per journey or per step. |
 | Honest AI | Never present benefit amounts or eligibility as guaranteed; always cite/route to the official source. |
@@ -59,13 +59,13 @@ To become the single trusted starting point for every Filipino navigating govern
 
 ## 3. Problem Statement
 
-When a Filipino experiences a major life event, they face invisible obligations and entitlements across multiple agencies. Information is fragmented and outdated; the correct order is unknown; benefits go unclaimed; and even a well-informed citizen must still queue, pay, and file at several offices. The existing eGov PH chatbot names agencies but does not order steps, list documents, link services, track completion, surface benefits, or **act** on the citizen's behalf. E-Hakbang completes what the chatbot starts — and then automates the legwork.
+When a Filipino experiences a major life event, they face invisible obligations and entitlements across multiple agencies. Information is fragmented and outdated; the correct order is unknown; benefits go unclaimed; and even a well-informed citizen must still queue, pay, and file at several offices. The existing eGov PH chatbot names agencies but does not order steps, list documents, link services, track completion, surface benefits, or **act** on the citizen's behalf. eHakbang completes what the chatbot starts — and then automates the legwork.
 
 ---
 
 ## 4. Target Users
 
-E-Hakbang serves **every Filipino who has experienced any life event** that triggers government obligations or entitlements, with priority on non-tech-savvy users. (Personas from v2.0 remain valid: Maria — newly married; Nena — new mother/informal worker; Mang Ernesto — retiring; Ate Cynthia — barangay officer assisting constituents.)
+eHakbang serves **every Filipino who has experienced any life event** that triggers government obligations or entitlements, with priority on non-tech-savvy users. (Personas from v2.0 remain valid: Maria — newly married; Nena — new mother/informal worker; Mang Ernesto — retiring; Ate Cynthia — barangay officer assisting constituents.)
 
 **Life events in scope (not exhaustive):** got married, had a baby, lost a job, retired, started a business, became a senior citizen, became a PWD, death in the family — plus free-text description. Automation is generic across all of them.
 
@@ -239,7 +239,7 @@ prepare (eGov AI prefill) → review & consent → [pay fee via eGovPay if any]
 - **Privacy:** only the returned case number is stored locally; contact captured solely for the OTP.
 
 ### 9.6 Out of scope for v3 (available, not used now)
-- **eGov SSO (1):** excluded — E-Hakbang requires no sign-in.
+- **eGov SSO (1):** excluded — eHakbang requires no sign-in.
 - **National ID eVerify (2) + Face Liveness (8):** excluded for now — no identity verification in this scope (engine prepares/pays/notifies/anchors and hands off final agency submission where identity would be required).
 - **DBM Compass (9):** candidate future transparency widget.
 
@@ -300,8 +300,8 @@ prepare (eGov AI prefill) → review & consent → [pay fee via eGovPay if any]
 - **Hand-off** — a step the engine cannot fully complete via available APIs, handed to the citizen with the official link and instructions.
 - **Anchor (eGovChain)** — writing a tamper-evident hash + minimal metadata of a completed step to the government blockchain for later verification.
 - **Simulated** — an integration running against a local stand-in client (no live environment), clearly labeled in the UI.
-- **eReport / case number** — a filed citizen report or complaint identified by a case number; E-Hakbang uses it as the fallback when a step fails, is rejected or delayed, or needs escalation, and tracks it in My Reports.
+- **eReport / case number** — a filed citizen report or complaint identified by a case number; eHakbang uses it as the fallback when a step fails, is rejected or delayed, or needs escalation, and tracks it in My Reports.
 
 ---
 
-*E-Hakbang | Product Requirements Document v3.0 | eGov Hackathon 2025 | DICT — Department of Information and Communications Technology*
+*eHakbang | Product Requirements Document v3.0 | eGov Hackathon 2025 | DICT — Department of Information and Communications Technology*

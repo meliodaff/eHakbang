@@ -1,7 +1,7 @@
-# Implementation Plan — E-Hakbang UI (eGovPH-style clone)
+# Implementation Plan — eHakbang UI (eGovPH-style clone)
 
 ## Problem Statement
-Build the front-end interface for E-Hakbang inside the existing Next.js directory, styled as a faithful clone of the eGovPH super app. Scope: all 4 PRD screens, UI-only with mock data, plus a scaffolded (empty, ready-to-fill) API integration folder. No real Claude/eGov calls yet.
+Build the front-end interface for eHakbang inside the existing Next.js directory, styled as a faithful clone of the eGovPH super app. Scope: all 4 PRD screens, UI-only with mock data, plus a scaffolded (empty, ready-to-fill) API integration folder. No real Claude/eGov calls yet.
 
 ## Requirements (confirmed with user)
 1. Faithful eGovPH clone — government-blue aesthetic, card/tile layout, mobile-first, bottom tab navigation.

@@ -1,8 +1,8 @@
 import { TopAppBar } from "./TopAppBar";
 
 /**
- * Shared sticky E-Hakbang header. Wraps {@link TopAppBar} (brand wordmark +
- * Bagong Pilipinas logo) so every E-Hakbang service screen renders an
+ * Shared sticky eHakbang header. Wraps {@link TopAppBar} (brand wordmark +
+ * Bagong Pilipinas logo) so every eHakbang service screen renders an
  * identical header. `backHref` controls the back button target.
  */
 export function EhakbangHeader({ backHref = "/ehakbang" }: { backHref?: string }) {

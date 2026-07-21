@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 /**
  * eGov-style service tile: a pale-blue rounded icon with a caption. By default
  * it is a static (representative) tile for the host dashboard; pass `href` to
- * make it a real link (used for the E-Hakbang entry).
+ * make it a real link (used for the eHakbang entry).
  */
 export function ServiceTile({
   icon,

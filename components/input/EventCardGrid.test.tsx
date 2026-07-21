@@ -36,4 +36,22 @@ describe("EventCardGrid", () => {
     fireEvent.click(screen.getByText(target.short));
     expect(push).toHaveBeenCalledWith(`/journey?event=${target.id}`);
   });
+
+  it("routes the graduated event through the verification gate", () => {
+    render(<EventCardGrid />);
+    fireEvent.click(screen.getByRole("button", { name: /more events/i }));
+    const graduated = MORE_LIFE_EVENTS.find((e) => e.id === "just-graduated");
+    expect(graduated).toBeDefined();
+    fireEvent.click(screen.getByText(graduated!.short));
+    expect(push).toHaveBeenCalledWith("/journey/verify?event=just-graduated");
+  });
+
+  it("routes the moved-residence event through the verification gate", () => {
+    render(<EventCardGrid />);
+    fireEvent.click(screen.getByRole("button", { name: /more events/i }));
+    const moved = MORE_LIFE_EVENTS.find((e) => e.id === "moved-residence");
+    expect(moved).toBeDefined();
+    fireEvent.click(screen.getByText(moved!.short));
+    expect(push).toHaveBeenCalledWith("/journey/verify?event=moved-residence");
+  });
 });

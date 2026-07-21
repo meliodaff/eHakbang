@@ -10,8 +10,8 @@ describe("ServiceTile", () => {
   });
 
   it("is a link when href is provided", () => {
-    render(<ServiceTile icon="🧭" label="E-Hakbang" href="/ehakbang" />);
-    expect(screen.getByRole("link", { name: /e-hakbang/i })).toHaveAttribute(
+    render(<ServiceTile icon="🧭" label="eHakbang" href="/ehakbang" />);
+    expect(screen.getByRole("link", { name: /ehakbang/i })).toHaveAttribute(
       "href",
       "/ehakbang",
     );

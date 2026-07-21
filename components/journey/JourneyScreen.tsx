@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Journey } from "@/lib/types";
@@ -9,18 +9,22 @@ import {
   getActiveJourney,
   getStoredJourney,
   completeStep,
+  markStepsDone,
 } from "@/lib/journey-store";
+import { useIdWallet, stepFulfilledByWallet } from "@/lib/id-wallet";
 import { JourneyView } from "./JourneyView";
 
 /**
  * Screen 2 controller. Loads the journey for the selected event (resuming
- * saved progress if any), persists completions to localStorage, and routes to
- * the completion screen once every step is done.
+ * saved progress if any), auto-satisfies steps whose ID the user already holds
+ * (ID wallet), persists completions to localStorage, and routes to the
+ * completion screen once every step is done.
  */
 export function JourneyScreen({ eventId }: { eventId?: string }) {
   const router = useRouter();
   const [journey, setJourney] = useState<Journey | null>(null);
   const [ready, setReady] = useState(false);
+  const { heldIds, ready: walletReady } = useIdWallet();
 
   useEffect(() => {
     let base: Journey | undefined;
@@ -34,10 +38,32 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
     setReady(true);
   }, [eventId]);
 
+  // Steps auto-satisfied because the matching ID is already in the wallet.
+  const walletStepNumbers = useMemo(() => {
+    if (!journey) return [];
+    return journey.steps
+      .filter((s) => stepFulfilledByWallet(s, heldIds))
+      .map((s) => s.step_number);
+  }, [journey, heldIds]);
+
+  // Manual completions ∪ wallet-satisfied steps.
+  const effectiveCompleted = useMemo(() => {
+    if (!journey) return [];
+    return Array.from(
+      new Set([...journey.completed_step_numbers, ...walletStepNumbers]),
+    );
+  }, [journey, walletStepNumbers]);
+
+  const allDone =
+    !!journey &&
+    journey.total_steps > 0 &&
+    effectiveCompleted.length >= journey.total_steps;
+
   function handleComplete(stepNumber: number) {
     setJourney((current) => {
       if (!current) return current;
-      const updated = completeStep(current, stepNumber);
+      // Fold wallet-satisfied steps in so progress/completion stay accurate.
+      const updated = completeStep(current, stepNumber, walletStepNumbers);
       if (updated.status === "completed") {
         setTimeout(
           () =>
@@ -51,7 +77,14 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
     });
   }
 
-  if (!ready) {
+  function handleFinish() {
+    if (!journey) return;
+    const updated = markStepsDone(journey, walletStepNumbers);
+    setJourney(updated);
+    router.push(`/journey/complete?id=${encodeURIComponent(updated.id)}`);
+  }
+
+  if (!ready || !walletReady) {
     return (
       <main className="flex flex-1 items-center justify-center px-6 text-muted">
         Loading…
@@ -75,10 +108,46 @@ export function JourneyScreen({ eventId }: { eventId?: string }) {
   }
 
   return (
-    <JourneyView
-      journey={journey}
-      completed={journey.completed_step_numbers}
-      onComplete={handleComplete}
-    />
+    <>
+      {walletStepNumbers.length > 0 && (
+        <div className="flex items-start gap-2 border-b border-border bg-egov-success-bg px-5 py-3 text-sm text-egov-success">
+          <span aria-hidden>🪪</span>
+          <p>
+            {walletStepNumbers.length} step
+            {walletStepNumbers.length === 1 ? "" : "s"} auto-completed mula sa
+            iyong{" "}
+            <Link
+              href="/wallet"
+              className="font-semibold underline underline-offset-2"
+            >
+              ID Wallet
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
+      <JourneyView
+        journey={journey}
+        completed={effectiveCompleted}
+        walletStepNumbers={walletStepNumbers}
+        onComplete={handleComplete}
+      />
+
+      {allDone && (
+        <div className="sticky bottom-0 z-20 border-t border-border bg-surface/95 px-5 py-4 backdrop-blur">
+          <p className="mb-2 text-center text-sm font-semibold text-egov-success">
+            Kumpleto na ang lahat ng hakbang! 🎉
+          </p>
+          <button
+            type="button"
+            onClick={handleFinish}
+            className="min-h-12 w-full rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+          >
+            Tapusin ang journey
+          </button>
+        </div>
+      )}
+    </>
   );
 }

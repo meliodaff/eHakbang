@@ -54,7 +54,7 @@ export function AskAboutStep({ stepTitle }: { stepTitle: string }) {
           </button>
           {asked && (
             <p className="rounded-egov bg-egov-blue-050 px-3 py-2 text-sm text-egov-blue-dark">
-              Answers from E-Hakbang AI will appear here once connected. For now,
+              Answers from eHakbang AI will appear here once connected. For now,
               please refer to the official service page above.
             </p>
           )}

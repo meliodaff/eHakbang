@@ -36,9 +36,9 @@ export function EventCardGrid() {
       return;
     }
     // Verification-gated events (e.g. Just Graduated) route through the
-    // document + liveness flow before their journey checklist is shown.
+    // liveness + document flow before their journey checklist is shown.
     const target = eventRequiresVerification(event.id)
-      ? `/journey/verify?event=${encodeURIComponent(event.id)}`
+      ? `/journey/liveness?event=${encodeURIComponent(event.id)}`
       : `/journey?event=${encodeURIComponent(event.id)}`;
     router.push(target);
   }

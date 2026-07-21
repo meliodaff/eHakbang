@@ -8,9 +8,12 @@ export default async function JourneyVerifyPage({
   searchParams: Promise<{ event?: string }>;
 }) {
   const { event } = await searchParams;
+  const backHref = event
+    ? `/journey/liveness?event=${encodeURIComponent(event)}`
+    : "/journey/liveness";
   return (
     <>
-      <EhakbangHeader backHref="/ehakbang" />
+      <EhakbangHeader backHref={backHref} />
       <DocumentVerifyScreen eventId={event} />
     </>
   );

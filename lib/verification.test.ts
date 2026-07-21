@@ -18,6 +18,10 @@ describe("eventRequiresVerification", () => {
     expect(eventRequiresVerification("first-job")).toBe(true);
   });
 
+  it("requires verification for the became-senior event", () => {
+    expect(eventRequiresVerification("became-senior")).toBe(true);
+  });
+
   it("does not require verification for a standard event", () => {
     expect(eventRequiresVerification("got-married")).toBe(false);
   });
@@ -49,6 +53,12 @@ describe("getVerificationCopy", () => {
   it("returns job-specific copy for the first-job event", () => {
     expect(getVerificationCopy("first-job").documentTitle).toMatch(
       /employment/i,
+    );
+  });
+
+  it("returns age-specific copy for the became-senior event", () => {
+    expect(getVerificationCopy("became-senior").documentTitle).toMatch(
+      /age/i,
     );
   });
 

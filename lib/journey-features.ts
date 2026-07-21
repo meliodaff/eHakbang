@@ -8,7 +8,13 @@
  */
 
 /** Life events that offer the "Apply All" shortcut. */
-export const APPLY_ALL_EVENT_IDS = ["just-graduated", "first-job"] as const;
+export const APPLY_ALL_EVENT_IDS = [
+  "just-graduated",
+  "first-job",
+  "became-senior",
+  "became-pwd",
+  "death-in-family",
+] as const;
 
 /** True when the given life event supports the "Apply All" shortcut. */
 export function eventSupportsApplyAll(eventId: string | undefined): boolean {

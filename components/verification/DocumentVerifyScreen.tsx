@@ -7,7 +7,7 @@ import { getVerificationCopy } from "@/lib/verification";
 import { useT } from "@/lib/i18n";
 
 /**
- * Verification gate — Step 1 of 2 (PROTOTYPE).
+ * Verification gate — Step 2 of 2 (PROTOTYPE).
  *
  * The citizen "uploads" a document proving their eligibility (e.g. a graduation
  * record, or proof of new address for a move). For now the upload is
@@ -23,8 +23,8 @@ export function DocumentVerifyScreen({ eventId }: { eventId?: string }) {
 
   const copy = getVerificationCopy(eventId);
   const nextHref = eventId
-    ? `/journey/liveness?event=${encodeURIComponent(eventId)}`
-    : "/journey/liveness";
+    ? `/journey?event=${encodeURIComponent(eventId)}`
+    : "/journey";
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     // STUB: any chosen document is auto-accepted (flow prototype only).
@@ -35,7 +35,7 @@ export function DocumentVerifyScreen({ eventId }: { eventId?: string }) {
   return (
     <main className="flex flex-1 flex-col gap-5 px-6 py-6">
       <p className="text-xs font-semibold uppercase tracking-wide text-egov-blue">
-        {t("Verification · Step 1 of 2")}
+        {t("Verification · Step 2 of 2")}
       </p>
 
       <div className="flex flex-col gap-2">

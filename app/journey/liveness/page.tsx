@@ -8,12 +8,9 @@ export default async function JourneyLivenessPage({
   searchParams: Promise<{ event?: string }>;
 }) {
   const { event } = await searchParams;
-  const backHref = event
-    ? `/journey/verify?event=${encodeURIComponent(event)}`
-    : "/journey/verify";
   return (
     <>
-      <EhakbangHeader backHref={backHref} />
+      <EhakbangHeader backHref="/ehakbang" />
       <LivenessCheckScreen eventId={event} />
     </>
   );

@@ -13,6 +13,14 @@ describe("eventSupportsApplyAll", () => {
     expect(eventSupportsApplyAll("first-job")).toBe(true);
   });
 
+  it("enables Apply All for the became-senior event", () => {
+    expect(eventSupportsApplyAll("became-senior")).toBe(true);
+  });
+
+  it("enables Apply All for the death-in-family event", () => {
+    expect(eventSupportsApplyAll("death-in-family")).toBe(true);
+  });
+
   it("does not enable Apply All for a standard event", () => {
     expect(eventSupportsApplyAll("got-married")).toBe(false);
   });

@@ -48,7 +48,7 @@ describe("EventCardGrid", () => {
     const graduated = MORE_LIFE_EVENTS.find((e) => e.id === "just-graduated");
     expect(graduated).toBeDefined();
     fireEvent.click(screen.getByText(graduated!.short));
-    expect(push).toHaveBeenCalledWith("/journey/verify?event=just-graduated");
+    expect(push).toHaveBeenCalledWith("/journey/liveness?event=just-graduated");
   });
 
   it("routes the moved-residence event through the verification gate", () => {
@@ -57,7 +57,7 @@ describe("EventCardGrid", () => {
     const moved = MORE_LIFE_EVENTS.find((e) => e.id === "moved-residence");
     expect(moved).toBeDefined();
     fireEvent.click(screen.getByText(moved!.short));
-    expect(push).toHaveBeenCalledWith("/journey/verify?event=moved-residence");
+    expect(push).toHaveBeenCalledWith("/journey/liveness?event=moved-residence");
   });
 
   it("routes the first-job event through the verification gate", () => {
@@ -66,7 +66,7 @@ describe("EventCardGrid", () => {
     const firstJob = MORE_LIFE_EVENTS.find((e) => e.id === "first-job");
     expect(firstJob).toBeDefined();
     fireEvent.click(screen.getByText(firstJob!.short));
-    expect(push).toHaveBeenCalledWith("/journey/verify?event=first-job");
+    expect(push).toHaveBeenCalledWith("/journey/liveness?event=first-job");
   });
 
   it("routes the married event to the confirm flow instead of straight to the journey", () => {

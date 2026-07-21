@@ -156,6 +156,9 @@ const FIL: Record<string, string> = {
   "Verify your employment": "I-verify ang iyong trabaho",
   "Upload proof of employment (e.g. job offer or certificate of employment) before continuing.":
     "Mag-upload ng patunay ng trabaho (hal. job offer o certificate of employment) bago magpatuloy.",
+  "Verify your disability": "I-verify ang iyong kapansanan",
+  "Upload a document proving your disability (e.g. a medical certificate or PWD assessment) before continuing.":
+    "Mag-upload ng dokumento na nagpapatunay ng iyong kapansanan (hal. medical certificate o PWD assessment) bago magpatuloy.",
   "Verify your document": "I-verify ang iyong dokumento",
   "Upload a supporting document before continuing.":
     "Mag-upload ng sumusuportang dokumento bago magpatuloy.",

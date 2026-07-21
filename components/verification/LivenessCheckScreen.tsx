@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n";
 type Status = "idle" | "scanning" | "passed";
 
 /**
- * Verification gate — Step 2 of 2 (PROTOTYPE).
+ * Verification gate — Step 1 of 2 (PROTOTYPE).
  *
  * A mocked liveness check meant to confirm the person present is the real user.
  * There is NO camera, NO biometric capture, and NO API — pressing "Start" just
@@ -20,8 +20,8 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
   const [status, setStatus] = useState<Status>("idle");
 
   const nextHref = eventId
-    ? `/journey?event=${encodeURIComponent(eventId)}`
-    : "/journey";
+    ? `/journey/verify?event=${encodeURIComponent(eventId)}`
+    : "/journey/verify";
 
   function startCheck() {
     // STUB: mock liveness — auto-pass after a short simulated scan.
@@ -32,7 +32,7 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
   return (
     <main className="flex flex-1 flex-col gap-5 px-6 py-6">
       <p className="text-xs font-semibold uppercase tracking-wide text-egov-blue">
-        {t("Verification · Step 2 of 2")}
+        {t("Verification · Step 1 of 2")}
       </p>
 
       <div className="flex flex-col gap-2">
@@ -96,7 +96,7 @@ export function LivenessCheckScreen({ eventId }: { eventId?: string }) {
             onClick={() => router.push(nextHref)}
             className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-center font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
           >
-            {t("Continue journey")}
+            {t("Continue")}
           </button>
         )}
       </div>

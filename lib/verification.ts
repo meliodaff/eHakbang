@@ -17,6 +17,8 @@ export const VERIFICATION_REQUIRED_EVENT_IDS = [
   "just-graduated",
   "moved-residence",
   "first-job",
+  "became-senior",
+  "became-pwd",
 ] as const;
 
 /** True when the given life event must go through the verification gate. */
@@ -58,6 +60,18 @@ const VERIFICATION_COPY: Record<string, VerificationCopy> = {
     documentTitle: "Verify your employment",
     documentDescription:
       "Upload proof of employment (e.g. job offer or certificate of employment) before continuing.",
+    uploadHint: "JPG, PNG, or PDF",
+  },
+  "became-senior": {
+    documentTitle: "Verify your age",
+    documentDescription:
+      "Upload a document proving you are 60 or older (e.g. PSA birth certificate or a valid ID showing your birth date) before continuing.",
+    uploadHint: "JPG, PNG, or PDF",
+  },
+  "became-pwd": {
+    documentTitle: "Verify your disability",
+    documentDescription:
+      "Upload a document proving your disability (e.g. a medical certificate or PWD assessment) before continuing.",
     uploadHint: "JPG, PNG, or PDF",
   },
 };

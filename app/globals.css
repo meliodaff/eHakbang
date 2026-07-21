@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/*
+  E-Hakbang design tokens — eGovPH-inspired.
+  Government-blue palette derived from the Philippine flag, mobile-first,
+  senior-friendly (large legible text, generous touch targets).
+*/
+@theme {
+  /* Brand blues */
+  --color-egov-blue: #1560bd;        /* primary royal blue */
+  --color-egov-blue-dark: #0d47a1;   /* darker blue for gradients/hover */
+  --color-egov-navy: #0038a8;        /* deep flag navy */
+  --color-egov-blue-050: #eaf1fb;    /* tinted surfaces / active tab bg */
+  --color-egov-blue-100: #d3e3f7;
+
+  /* Flag accents */
+  --color-egov-red: #ce1126;
+  --color-egov-yellow: #fcd116;
+
+  /* Semantic (PRD §10.1 color-as-meaning) */
+  --color-egov-success: #1a8a4b;     /* green = done / benefit claim */
+  --color-egov-success-bg: #e6f5ec;
+  --color-egov-record: #1560bd;      /* blue = record update */
+  --color-egov-record-bg: #eaf1fb;
+  --color-egov-warning: #b45309;     /* amber = caution/disclaimer */
+  --color-egov-warning-bg: #fef3c7;
+  --color-egov-danger: #ce1126;      /* red = required/urgent */
+
+  /* Neutrals / surfaces */
+  --color-background: #f4f6f9;        /* app light-grey background */
+  --color-surface: #ffffff;          /* cards */
+  --color-foreground: #1a2230;       /* primary text */
+  --color-muted: #5b6675;            /* secondary text */
+  --color-border: #e2e8f0;
+
+  /* Fonts (bound to next/font CSS variables in layout.tsx) */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Radii — friendly, rounded eGov look */
+  --radius-egov: 1rem;               /* rounded-2xl cards */
+  --radius-egov-lg: 1.5rem;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  /* Senior-friendly base size per PRD NFR-03 (>=16px body text) */
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,54 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { COMMON_LIFE_EVENTS, MORE_LIFE_EVENTS } from "@/lib/events";
+import type { LifeEvent } from "@/lib/types";
+import { EventCard } from "./EventCard";
+
+/**
+ * Predefined life-event cards (PRD FR-02): a 2-column mobile grid of the 8
+ * common events, with a "More events" expansion for less-common ones.
+ * Selecting a card generates its journey.
+ */
+export function EventCardGrid() {
+  const router = useRouter();
+  const [showMore, setShowMore] = useState(false);
+
+  function handleSelect(event: LifeEvent) {
+    router.push(`/journey?event=${encodeURIComponent(event.id)}`);
+  }
+
+  return (
+    <section aria-labelledby="events-heading" className="flex flex-col gap-3">
+      <h2 id="events-heading" className="text-sm font-semibold text-muted">
+        O piliin ang pinakamalapit sa sitwasyon mo
+      </h2>
+
+      <div className="grid grid-cols-2 gap-3">
+        {COMMON_LIFE_EVENTS.map((event) => (
+          <EventCard key={event.id} event={event} onSelect={handleSelect} />
+        ))}
+      </div>
+
+      {showMore && (
+        <div className="grid grid-cols-2 gap-3">
+          {MORE_LIFE_EVENTS.map((event) => (
+            <EventCard key={event.id} event={event} onSelect={handleSelect} />
+          ))}
+        </div>
+      )}
+
+      {MORE_LIFE_EVENTS.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowMore((v) => !v)}
+          aria-expanded={showMore}
+          className="mx-auto mt-1 rounded-full px-4 py-2 text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+        >
+          {showMore ? "Fewer events" : "More events"}
+        </button>
+      )}
+    </section>
+  );
+}

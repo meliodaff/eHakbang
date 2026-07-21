@@ -6,16 +6,16 @@ import {
 } from "./verification";
 
 describe("eventRequiresVerification", () => {
-  it("requires verification for the graduated event", () => {
-    expect(eventRequiresVerification("just-graduated")).toBe(true);
+  it("does not require verification for graduated (now uses civil-status flow)", () => {
+    expect(eventRequiresVerification("just-graduated")).toBe(false);
   });
 
-  it("requires verification for the moved-residence event", () => {
-    expect(eventRequiresVerification("moved-residence")).toBe(true);
+  it("does not require verification for moved-residence (now uses civil-status flow)", () => {
+    expect(eventRequiresVerification("moved-residence")).toBe(false);
   });
 
-  it("requires verification for the first-job event", () => {
-    expect(eventRequiresVerification("first-job")).toBe(true);
+  it("does not require verification for first-job (now uses civil-status flow)", () => {
+    expect(eventRequiresVerification("first-job")).toBe(false);
   });
 
   it("does not require verification for a standard event", () => {
@@ -27,9 +27,8 @@ describe("eventRequiresVerification", () => {
     expect(eventRequiresVerification("does-not-exist")).toBe(false);
   });
 
-  it("keeps both gated events in the required list", () => {
-    expect(VERIFICATION_REQUIRED_EVENT_IDS).toContain("just-graduated");
-    expect(VERIFICATION_REQUIRED_EVENT_IDS).toContain("moved-residence");
+  it("verification required list is empty (all moved to civil-status flow)", () => {
+    expect(VERIFICATION_REQUIRED_EVENT_IDS).toHaveLength(0);
   });
 });
 

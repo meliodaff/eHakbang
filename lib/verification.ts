@@ -13,11 +13,7 @@
  */
 
 /** Life event ids that must pass verification before their journey is shown. */
-export const VERIFICATION_REQUIRED_EVENT_IDS = [
-  "just-graduated",
-  "moved-residence",
-  "first-job",
-] as const;
+export const VERIFICATION_REQUIRED_EVENT_IDS = [] as const;
 
 /** True when the given life event must go through the verification gate. */
 export function eventRequiresVerification(eventId: string | undefined): boolean {

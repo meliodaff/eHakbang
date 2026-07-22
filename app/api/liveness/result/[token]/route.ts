@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getLivenessResult } from "@/lib/server/liveness";
 
 /**
  * GET /api/liveness/result/[token]
@@ -16,15 +17,6 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const apiKey = process.env.EGOV_LIVENESS_API_KEY;
-  const baseUrl = process.env.EGOV_LIVENESS_BASE_URL;
-
-  if (!apiKey || !baseUrl) {
-    return NextResponse.json(
-      { error: "Liveness API not configured" },
-      { status: 500 },
-    );
-  }
 
   if (!token) {
     return NextResponse.json(
@@ -33,38 +25,14 @@ export async function GET(
     );
   }
 
-  const response = await fetch(
-    `${baseUrl}/v1/liveness/result/${encodeURIComponent(token)}`,
-    {
-      method: "GET",
-      headers: {
-        "x-api-key": apiKey,
-      },
-    },
-  );
-
-  if (!response.ok) {
-    const text = await response.text();
+  try {
+    const result = await getLivenessResult(token);
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("[api/liveness/result] fetch failed:", err);
     return NextResponse.json(
-      { error: "Failed to fetch liveness result", details: text },
-      { status: response.status },
+      { error: "Failed to fetch liveness result", details: String(err) },
+      { status: 500 },
     );
   }
-
-  const data: {
-    status: string;
-    confidence_score: number;
-    reference_image_url: string;
-  } = await response.json();
-
-  // Apply recommended security thresholds:
-  // - status must be "SUCCEEDED"
-  // - confidence_score must be >= 95.0
-  const verified =
-    data.status === "SUCCEEDED" && data.confidence_score >= 95.0;
-
-  return NextResponse.json({
-    ...data,
-    verified,
-  });
 }

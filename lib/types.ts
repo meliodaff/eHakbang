@@ -34,6 +34,25 @@ export type IdType =
   | "voters-id"
   | "prc";
 
+/** Input type for a step's citizen-supplied `RequiredField`. */
+export type RequiredFieldType = "text" | "number" | "date";
+
+/**
+ * A data value only the citizen knows and must type in -- distinct from
+ * `documents_required`, which lists things to upload. E.g. a proposed
+ * business name or a bank account number isn't satisfied by any document.
+ */
+export interface RequiredField {
+  /** Machine-safe key, e.g. "proposed_business_name". */
+  field_key: string;
+  /** Human-readable prompt shown to the user. */
+  label: string;
+  field_type: RequiredFieldType;
+  /** Short format/help text. Null when there's none. */
+  hint?: string | null;
+  required: boolean;
+}
+
 /**
  * Government fee info for a step. `amount` is AI-generated free text (e.g.
  * "₱500", "Free", "₱200–500 depending on LGU") -- see `lib/journey-fees.ts`
@@ -70,6 +89,12 @@ export interface JourneyStep {
   egov_service_name: string;
   /** Term used to look up the official URL in the eGov catalog. */
   egov_search_term: string;
+  /**
+   * Agency-specific data values the citizen must supply beyond the single
+   * evidence document (e.g. a proposed business name, a bank account
+   * number). Absent/empty when the document alone is sufficient.
+   */
+  required_fields?: RequiredField[];
   /**
    * Resolved official service URL (from the eGov catalog API later).
    * Optional in the UI-only phase — falls back to the agency homepage.
@@ -112,6 +137,8 @@ export interface Journey {
   completed_step_numbers: number[];
   /** Step numbers whose government fee has been paid via eGovPay. */
   paid_step_numbers: number[];
+  /** Citizen-supplied answers to steps' `required_fields`, keyed by step_number then field_key. */
+  field_answers: Record<number, Record<string, string>>;
 }
 
 /** A predefined life-event shortcut card shown on the landing screen. */

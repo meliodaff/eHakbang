@@ -2,15 +2,24 @@
 
 import { useEffect, useState } from "react";
 import type { Journey, JourneyStep } from "@/lib/types";
-import { applyMarriageTransaction, createFeePayment } from "@/lib/api-client";
+import {
+  applyMarriageTransaction,
+  createFeePayment,
+  notifyAutoApplySuccess,
+} from "@/lib/api-client";
 import { isCivilStatusEvent, getCivilStatusTransition } from "@/lib/civil-status-events";
 import { getFeeBill, hasPayableFees, formatCurrency } from "@/lib/journey-fees";
+import { getMissingRequiredFields } from "@/lib/journey-fields";
+import { setFieldAnswers } from "@/lib/journey-store";
+import { StepFieldsForm } from "./StepFieldsForm";
 import { cn } from "@/lib/cn";
 
-type Stage = "asking" | "declined" | "billing" | "applying" | "done";
+type Stage = "asking" | "declined" | "fields" | "billing" | "applying" | "done";
 
 const PENDING_PAYMENT_KEY = "ehakbang:pending-payment";
 const RESUME_AUTO_APPLY_KEY = "ehakbang:resume-auto-apply";
+const RESUME_PAY_KEY = "ehakbang:resume-pay";
+const PAYMENT_VERIFIED_TOKEN_KEY = "ehakbang:payment-verified-token";
 
 /**
  * Offers to auto-submit the citizen's civil-status update to the remaining
@@ -40,6 +49,12 @@ export function AutoApplyBanner({
   const [applyingSteps, setApplyingSteps] = useState<JourneyStep[]>([]);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  // Steps whose required_fields still need answers -- snapshotted when the
+  // "fields" stage is entered, same reasoning as `applyingSteps`.
+  const [fieldsSteps, setFieldsSteps] = useState<JourneyStep[]>([]);
+  const [fieldAnswers, setLocalFieldAnswers] = useState<
+    Record<number, Record<string, string>>
+  >(journey.field_answers ?? {});
   const transition = getCivilStatusTransition(journey.event_id);
 
   const targetSteps = isCivilStatusEvent(journey.event_id) ? journey.steps : [];
@@ -49,45 +64,45 @@ export function AutoApplyBanner({
   const feeBill = getFeeBill(pendingSteps, journey.paid_step_numbers ?? []);
   const billable = hasPayableFees(feeBill);
 
-  async function startApplying(stepsToApply: JourneyStep[]) {
+  async function startApplying(
+    stepsToApply: JourneyStep[],
+    answers: Record<number, Record<string, string>> = fieldAnswers,
+  ) {
     setApplyingSteps(stepsToApply);
     setStage("applying");
     for (const step of stepsToApply) {
       setCurrentStepNumber(step.step_number);
-      await applyMarriageTransaction(step);
+      await applyMarriageTransaction(step, answers[step.step_number]);
       onComplete(step.step_number);
     }
     setCurrentStepNumber(null);
     setStage("done");
+    void notifyAutoApplySuccess(journey.event_id ?? "");
   }
 
-  // Resume automatically after a successful eGovPay redirect — the callback
-  // page already marked the paid steps and set this flag.
-  useEffect(() => {
-    if (typeof window === "undefined" || pendingSteps.length === 0) return;
-    const resumeId = window.sessionStorage.getItem(RESUME_AUTO_APPLY_KEY);
-    if (resumeId === journey.id) {
-      window.sessionStorage.removeItem(RESUME_AUTO_APPLY_KEY);
-      void startApplying(pendingSteps);
-    }
-    // Only ever meant to fire once per mount for this journey.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [journey.id]);
-
-  if (stage === "declined" || (stage === "asking" && pendingSteps.length === 0)) {
-    return null;
-  }
-
-  function handleConfirm() {
+  /** Proceeds exactly as a confirm with no missing fields always has: pay if billable, else apply. */
+  function proceedAfterConfirm(answers: Record<number, Record<string, string>>) {
     if (billable) {
       setStage("billing");
     } else {
-      void startApplying(pendingSteps);
+      void startApplying(pendingSteps, answers);
     }
   }
 
   async function handlePay() {
     if (!journey.event_id) return;
+
+    // Every payment requires a fresh, verified face-liveness check. If we
+    // don't have one yet, redirect through the verification flow and come
+    // back here (see the RESUME_PAY_KEY effect below) once it succeeds.
+    const livenessToken = window.sessionStorage.getItem(PAYMENT_VERIFIED_TOKEN_KEY);
+    if (!livenessToken) {
+      window.sessionStorage.setItem(RESUME_PAY_KEY, journey.event_id);
+      window.location.href = `/journey/pay/verify?event=${encodeURIComponent(journey.event_id)}`;
+      return;
+    }
+    window.sessionStorage.removeItem(PAYMENT_VERIFIED_TOKEN_KEY);
+
     setPaying(true);
     setPayError(null);
     try {
@@ -95,6 +110,7 @@ export function AutoApplyBanner({
         eventId: journey.event_id,
         language: journey.language,
         stepNumbers: feeBill.payable.map((item) => item.stepNumber),
+        livenessToken,
       });
       window.sessionStorage.setItem(
         PENDING_PAYMENT_KEY,
@@ -110,6 +126,54 @@ export function AutoApplyBanner({
       setPayError(err instanceof Error ? err.message : "Failed to start payment");
       setPaying(false);
     }
+  }
+
+  // Resume automatically after a successful eGovPay redirect — the callback
+  // page already marked the paid steps and set this flag.
+  useEffect(() => {
+    if (typeof window === "undefined" || pendingSteps.length === 0) return;
+    const resumeId = window.sessionStorage.getItem(RESUME_AUTO_APPLY_KEY);
+    if (resumeId === journey.id) {
+      window.sessionStorage.removeItem(RESUME_AUTO_APPLY_KEY);
+      void startApplying(pendingSteps);
+    }
+    // Only ever meant to fire once per mount for this journey.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journey.id]);
+
+  // Resume automatically after a successful face-verification redirect — the
+  // pay-verify callback page already stored the verified token and this flag.
+  useEffect(() => {
+    if (typeof window === "undefined" || !journey.event_id) return;
+    const resumeEventId = window.sessionStorage.getItem(RESUME_PAY_KEY);
+    if (resumeEventId === journey.event_id) {
+      window.sessionStorage.removeItem(RESUME_PAY_KEY);
+      setStage("billing");
+      void handlePay();
+    }
+    // Only ever meant to fire once per mount for this journey.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journey.event_id]);
+
+  if (stage === "declined" || (stage === "asking" && pendingSteps.length === 0)) {
+    return null;
+  }
+
+  function handleConfirm() {
+    const missing = getMissingRequiredFields(pendingSteps, fieldAnswers);
+    if (missing.length > 0) {
+      const stepNumbers = new Set(missing.map((m) => m.stepNumber));
+      setFieldsSteps(pendingSteps.filter((s) => stepNumbers.has(s.step_number)));
+      setStage("fields");
+      return;
+    }
+    proceedAfterConfirm(fieldAnswers);
+  }
+
+  function handleFieldsSubmit(answers: Record<number, Record<string, string>>) {
+    const persisted = setFieldAnswers(journey, answers);
+    setLocalFieldAnswers(persisted.field_answers);
+    proceedAfterConfirm(persisted.field_answers);
   }
 
   return (
@@ -142,6 +206,14 @@ export function AutoApplyBanner({
             </button>
           </div>
         </div>
+      )}
+
+      {stage === "fields" && (
+        <StepFieldsForm
+          steps={fieldsSteps}
+          initialAnswers={fieldAnswers}
+          onSubmit={handleFieldsSubmit}
+        />
       )}
 
       {stage === "billing" && (

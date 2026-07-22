@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getLifeEventById } from "@/lib/events";
 import { getOrRegenerateJourney } from "@/lib/server/journey-requirements";
 import { createTransaction, generateTxnId } from "@/lib/server/egovpay";
+import { getLivenessResult } from "@/lib/server/liveness";
 import { getFeeBill } from "@/lib/journey-fees";
 import type { Language } from "@/lib/types";
 
@@ -12,15 +13,23 @@ import type { Language } from "@/lib/types";
  * predefined-event journey. Fee amounts are never trusted from the client --
  * this re-derives the canonical journey (the same source /api/journey uses)
  * and only bills steps whose fee it can independently confirm is payable.
+ * Also requires a verified face-liveness session token -- a client-only
+ * verification gate is bypassable by calling this route directly, so the
+ * check is re-done here against the eGov Face Liveness API.
  *
  * Request body:
- *   { eventId: string; language?: "en" | "fil"; stepNumbers: number[] }
+ *   { eventId: string; language?: "en" | "fil"; stepNumbers: number[]; livenessToken: string }
  *
  * Response:
  *   { uuid: string; url: string; txnid: string; amount: number; currency: string; stepNumbers: number[] }
  */
 export async function POST(request: NextRequest) {
-  let body: { eventId?: string; language?: Language; stepNumbers?: number[] };
+  let body: {
+    eventId?: string;
+    language?: Language;
+    stepNumbers?: number[];
+    livenessToken?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -35,6 +44,19 @@ export async function POST(request: NextRequest) {
   }
   if (!Array.isArray(body.stepNumbers) || body.stepNumbers.length === 0) {
     return NextResponse.json({ error: "stepNumbers is required" }, { status: 400 });
+  }
+  if (!body.livenessToken || typeof body.livenessToken !== "string") {
+    return NextResponse.json({ error: "Face verification is required" }, { status: 403 });
+  }
+
+  try {
+    const liveness = await getLivenessResult(body.livenessToken);
+    if (!liveness.verified) {
+      return NextResponse.json({ error: "Face verification is required" }, { status: 403 });
+    }
+  } catch (err) {
+    console.error("[api/payment] liveness check failed:", err);
+    return NextResponse.json({ error: "Face verification is required" }, { status: 403 });
   }
 
   const { journey } = await getOrRegenerateJourney({

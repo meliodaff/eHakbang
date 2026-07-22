@@ -42,6 +42,22 @@ const STEP_FEE_SCHEMA = {
   ],
 };
 
+const REQUIRED_FIELDS_SCHEMA = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      field_key: { type: "string" },
+      label: { type: "string" },
+      field_type: { type: "string", enum: ["text", "number", "date"] },
+      hint: { type: ["string", "null"] },
+      required: { type: "boolean" },
+    },
+    required: ["field_key", "label", "field_type", "hint", "required"],
+    additionalProperties: false,
+  },
+};
+
 const JOURNEY_SCHEMA = {
   type: "object",
   properties: {
@@ -62,6 +78,7 @@ const JOURNEY_SCHEMA = {
           fee: STEP_FEE_SCHEMA,
           egov_service_name: { type: "string" },
           egov_search_term: { type: "string" },
+          required_fields: REQUIRED_FIELDS_SCHEMA,
         },
         required: [
           "agency_name",
@@ -75,6 +92,7 @@ const JOURNEY_SCHEMA = {
           "fee",
           "egov_service_name",
           "egov_search_term",
+          "required_fields",
         ],
         additionalProperties: false,
       },
@@ -96,6 +114,12 @@ Rules:
   applies, set "fee" with the amount/how to pay found on an official source and cite it in
   "official_source_url". If a step has no fee, set "fee" to null.
 - List every document required to complete the step in "documents_required".
+- "documents_required" is only for things the citizen uploads (certificates, IDs, forms). If the
+  step also needs a data value only the citizen knows -- one that no document supplies, like a
+  proposed business name, a bank account number, or a specific address -- list each such value as
+  an entry in "required_fields" instead (field_key, label, field_type, hint, required). Do not
+  duplicate an item between the two lists. Leave "required_fields" as an empty array when the
+  uploaded evidence document is sufficient on its own, which is true for most steps.
 - Keep "reason" a one-sentence, plain-language explanation. Keep "important_note" for deadlines,
   eligibility caveats, or warnings -- null when there are none.
 - Write every text field (reason, important_note, documents_required, estimated_time,

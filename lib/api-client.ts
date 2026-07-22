@@ -111,11 +111,13 @@ export async function fetchLivenessResult(
 /**
  * Auto-apply a single record-update step on the citizen's behalf (e.g.
  * submitting a civil-status update to an agency using their uploaded
- * marriage certificate).
- * TODO(api): POST this step's update to the real agency-submission endpoint.
+ * marriage certificate, plus any of the step's `required_fields` answers).
+ * TODO(api): POST this step's update -- fieldValues included -- to the real
+ * agency-submission endpoint.
  */
 export async function applyMarriageTransaction(
   step: JourneyStep,
+  _fieldValues?: Record<string, string>,
 ): Promise<{ stepNumber: number; submitted: boolean }> {
   await new Promise((resolve) => setTimeout(resolve, 700));
   return { stepNumber: step.step_number, submitted: true };
@@ -125,6 +127,8 @@ export interface CreateFeePaymentInput {
   eventId: string;
   language?: Language;
   stepNumbers: number[];
+  /** Verified eGov Face Liveness session token; required by /api/payment. */
+  livenessToken: string;
 }
 
 export interface CreateFeePaymentResult {
@@ -151,6 +155,7 @@ export async function createFeePayment(
       eventId: input.eventId,
       language: input.language ?? "en",
       stepNumbers: input.stepNumbers,
+      livenessToken: input.livenessToken,
     }),
   });
   if (!res.ok) {
@@ -178,4 +183,24 @@ export async function fetchPaymentStatus(uuid: string): Promise<PaymentStatus> {
     throw new Error(data.error ?? "Failed to fetch payment status");
   }
   return res.json();
+}
+
+/**
+ * Notify the citizen (via SMS, see /api/notifications/auto-apply) that their
+ * auto-apply submission finished successfully. Best-effort -- a notification
+ * failure must never surface as an error to the auto-apply flow itself.
+ */
+export async function notifyAutoApplySuccess(eventId: string): Promise<void> {
+  try {
+    const res = await fetch("/api/notifications/auto-apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId }),
+    });
+    if (!res.ok) {
+      console.error("[notifyAutoApplySuccess] request failed:", await res.text());
+    }
+  } catch (err) {
+    console.error("[notifyAutoApplySuccess] request failed:", err);
+  }
 }

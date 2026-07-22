@@ -94,13 +94,22 @@ describe("api-client (fee payment via /api/payment)", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => result });
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await createFeePayment({ eventId: "got-married", stepNumbers: [1] });
+    const response = await createFeePayment({
+      eventId: "got-married",
+      stepNumbers: [1],
+      livenessToken: "token-abc",
+    });
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/payment",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ eventId: "got-married", language: "en", stepNumbers: [1] }),
+        body: JSON.stringify({
+          eventId: "got-married",
+          language: "en",
+          stepNumbers: [1],
+          livenessToken: "token-abc",
+        }),
       }),
     );
     expect(response).toEqual(result);
@@ -113,7 +122,7 @@ describe("api-client (fee payment via /api/payment)", () => {
     );
 
     await expect(
-      createFeePayment({ eventId: "got-married", stepNumbers: [1] }),
+      createFeePayment({ eventId: "got-married", stepNumbers: [1], livenessToken: "token-abc" }),
     ).rejects.toThrow("boom");
   });
 

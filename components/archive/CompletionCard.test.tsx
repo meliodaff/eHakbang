@@ -23,6 +23,7 @@ const journey: Journey = {
   completed_at: "2026-07-05T07:30:00.000Z",
   completed_step_numbers: [1, 2, 3, 4, 5],
   paid_step_numbers: [],
+  field_answers: {},
 };
 
 describe("CompletionCard", () => {

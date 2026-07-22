@@ -53,6 +53,7 @@ function persist(
   base: Journey,
   completedNumbers: number[],
   paidNumbers?: number[],
+  fieldAnswers?: Record<number, Record<string, string>>,
 ): Journey {
   const list = read();
   const idx = list.findIndex((j) => j.id === base.id);
@@ -66,6 +67,7 @@ function persist(
     completed_at: null,
     completed_step_numbers: merged,
     paid_step_numbers: Array.from(new Set(paidNumbers ?? existingPayments(base))),
+    field_answers: fieldAnswers ?? existingFieldAnswers(base),
   };
   if (merged.length >= record.total_steps && record.total_steps > 0) {
     record.status = "completed";
@@ -86,6 +88,11 @@ function existingCompletions(base: Journey): number[] {
 /** Paid fee step numbers already persisted for this journey (or the base's own set). */
 function existingPayments(base: Journey): number[] {
   return getStoredJourney(base.id)?.paid_step_numbers ?? base.paid_step_numbers ?? [];
+}
+
+/** Required-field answers already persisted for this journey (or the base's own set). */
+function existingFieldAnswers(base: Journey): Record<number, Record<string, string>> {
+  return getStoredJourney(base.id)?.field_answers ?? base.field_answers ?? {};
 }
 
 /**
@@ -122,6 +129,23 @@ export function markStepsPaid(base: Journey, stepNumbers: number[]): Journey {
     ...existingPayments(base),
     ...stepNumbers,
   ]);
+}
+
+/**
+ * Merge citizen-supplied answers to steps' `required_fields` into the
+ * journey, persisting on first engagement. `answers` is merged per step
+ * number (existing answers for other fields on that step are kept, not
+ * overwritten wholesale).
+ */
+export function setFieldAnswers(
+  base: Journey,
+  answers: Record<number, Record<string, string>>,
+): Journey {
+  const merged: Record<number, Record<string, string>> = { ...existingFieldAnswers(base) };
+  for (const [stepNumber, stepAnswers] of Object.entries(answers)) {
+    merged[Number(stepNumber)] = { ...merged[Number(stepNumber)], ...stepAnswers };
+  }
+  return persist(base, existingCompletions(base), existingPayments(base), merged);
 }
 
 /** Remove any stored journey for a given life-event id (e.g. "got-married"). */

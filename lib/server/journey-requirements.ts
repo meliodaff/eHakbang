@@ -55,6 +55,7 @@ function rowToJourney(row: JourneyRequirementsRow, language: Language): Journey 
     completed_at: null,
     completed_step_numbers: [],
     paid_step_numbers: [],
+    field_answers: {},
   };
 }
 

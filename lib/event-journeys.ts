@@ -38,6 +38,7 @@ function build(
     completed_at: null,
     completed_step_numbers: [],
     paid_step_numbers: [],
+    field_answers: {},
   };
 }
 
@@ -309,11 +310,20 @@ export const EVENT_JOURNEYS: Record<string, Journey> = {
         step_title: "Register your business name",
         step_type: "record_update",
         reason: "Sole proprietors must register their business name (SEC for corporations).",
-        documents_required: ["Valid ID", "Proposed business names"],
+        documents_required: ["Valid ID"],
         estimated_time: "Same day (online)",
         important_note: null,
         egov_service_name: "DTI Business Name Registration",
         egov_search_term: "DTI business name registration",
+        required_fields: [
+          {
+            field_key: "proposed_business_name",
+            label: "Proposed business name",
+            field_type: "text",
+            hint: "DTI checks availability -- have a backup name ready.",
+            required: true,
+          },
+        ],
       },
       {
         agency_name: "Bureau of Internal Revenue",
@@ -333,11 +343,20 @@ export const EVENT_JOURNEYS: Record<string, Journey> = {
         step_title: "Get your Mayor's / Business Permit",
         step_type: "record_update",
         reason: "Required to legally operate within the locality.",
-        documents_required: ["DTI certificate", "Barangay clearance", "Lease/site details"],
+        documents_required: ["DTI certificate", "Barangay clearance"],
         estimated_time: "3–7 days",
         important_note: null,
         egov_service_name: "LGU Business Permit",
         egov_search_term: "LGU business permit",
+        required_fields: [
+          {
+            field_key: "lease_site_details",
+            label: "Business address / lease or site details",
+            field_type: "text",
+            hint: "The exact address where the business will operate.",
+            required: true,
+          },
+        ],
       },
       {
         agency_name: "SSS / PhilHealth / Pag-IBIG",

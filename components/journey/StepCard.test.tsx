@@ -169,7 +169,7 @@ describe("StepCard", () => {
     expect(submitAutoApply).toHaveBeenCalledWith(
       expect.objectContaining({ journeyId: baseProps.journeyId, stepNumber: 1 }),
     );
-    expect(screen.getByText(/application pending/i)).toBeInTheDocument();
+    expect(screen.getByText(/awaiting agency review/i)).toBeInTheDocument();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
@@ -204,7 +204,7 @@ describe("StepCard", () => {
       />,
     );
     await act(async () => {});
-    expect(screen.getByText(/application pending/i)).toBeInTheDocument();
+    expect(screen.getByText(/awaiting agency review/i)).toBeInTheDocument();
     expect(submitAutoApply).not.toHaveBeenCalled();
 
     await act(async () => {

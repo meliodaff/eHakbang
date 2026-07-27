@@ -149,6 +149,14 @@ export interface Journey {
   auto_applied_step_numbers: number[];
   /** Auto-applied step numbers whose resulting document has been claimed at the agency office. */
   claimed_step_numbers: number[];
+  /**
+   * Step numbers whose application has been submitted to the agency and is
+   * awaiting the agency's response -- not yet completed. Drives the "waiting
+   * for the agencies to respond" state on the tracking dashboard. Optional so
+   * older stored journeys (and catalog/mock literals) don't need the field;
+   * it's backfilled to [] on read (see journey-store `migrate`).
+   */
+  submitted_step_numbers?: number[];
 }
 
 /** A predefined life-event shortcut card shown on the landing screen. */

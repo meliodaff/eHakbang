@@ -99,7 +99,8 @@ const FIL: Record<string, string> = {
   "Estimated time:": "Tinatayang oras:",
   "Go to Official Service": "Pumunta sa Opisyal na Serbisyo",
   "Auto Apply": "I-auto Apply",
-  "Application pending…": "Naghihintay ang aplikasyon…",
+  "Submitted — awaiting agency review":
+    "Naipasa na — hinihintay ang pagsusuri ng ahensya",
   "Couldn't check this step's status. Please try again.":
     "Hindi na-check ang status ng hakbang na ito. Subukan muli.",
   "Couldn't submit this step. Please try again.":

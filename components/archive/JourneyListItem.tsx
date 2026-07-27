@@ -43,23 +43,23 @@ export function JourneyListItem({ journey }: { journey: Journey }) {
           <span className="text-xs text-muted">{dateLabel}</span>
         </div>
       </div>
-      <Link
-        href={
-          isActive
-            ? journey.event_id
-              ? `/journey?event=${journey.event_id}`
-              : "/journey"
-            : `/journey/complete?id=${journey.id}`
-        }
-        className={cn(
-          "min-h-10 shrink-0 rounded-egov px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue",
-          isActive
-            ? "bg-egov-blue text-white hover:bg-egov-blue-dark"
-            : "border border-egov-blue text-egov-blue hover:bg-egov-blue-050",
+      <div className="flex shrink-0 flex-col items-stretch gap-2">
+        {isActive ? (
+          <Link
+            href="/track"
+            className="min-h-10 rounded-egov border border-egov-blue px-4 py-2 text-center text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+          >
+            View Track
+          </Link>
+        ) : (
+          <Link
+            href={`/journey/complete?id=${journey.id}`}
+            className="min-h-10 rounded-egov border border-egov-blue px-4 py-2 text-center text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+          >
+            View
+          </Link>
         )}
-      >
-        {isActive ? "Continue" : "View"}
-      </Link>
+      </div>
     </li>
   );
 }

@@ -13,7 +13,7 @@ create table if not exists public.application_queue (
 );
 
 comment on table public.application_queue is
-  'Mocked per-step Auto Apply submission queue. One row per (journey_id, step_number); status flips pending -> accepted ~15s after created_at, computed lazily on read -- no cron.';
+  'Per-step Auto Apply submission queue. One row per (journey_id, step_number); pending applications await an agency result before they can be accepted.';
 comment on column public.application_queue.field_answers is
   'Citizen-supplied RequiredField answers (lib/types.ts) for this step at submission time. Snapshot only, not synced back to journey_requirements or localStorage.';
 

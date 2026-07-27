@@ -3,13 +3,13 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AutoApplyBanner } from "./AutoApplyBanner";
 import type { Journey, JourneyStep } from "@/lib/types";
 
-const { applyMarriageTransaction, createFeePayment, notifyAutoApplySuccess } = vi.hoisted(() => ({
-  applyMarriageTransaction: vi.fn(),
+const { submitAutoApply, createFeePayment, notifyAutoApplySuccess } = vi.hoisted(() => ({
+  submitAutoApply: vi.fn(),
   createFeePayment: vi.fn(),
   notifyAutoApplySuccess: vi.fn(),
 }));
 vi.mock("@/lib/api-client", () => ({
-  applyMarriageTransaction,
+  submitAutoApply,
   createFeePayment,
   notifyAutoApplySuccess,
 }));
@@ -63,7 +63,7 @@ describe("AutoApplyBanner", () => {
 
   beforeEach(() => {
     onComplete.mockReset();
-    applyMarriageTransaction.mockReset().mockResolvedValue({ submitted: true });
+    submitAutoApply.mockReset().mockResolvedValue({ status: "pending" });
     createFeePayment.mockReset();
     notifyAutoApplySuccess.mockReset();
     window.sessionStorage.clear();
@@ -83,8 +83,15 @@ describe("AutoApplyBanner", () => {
     fireEvent.click(screen.getByRole("button", { name: /yes, auto apply/i }));
 
     expect(screen.queryByText(/pay government fees/i)).not.toBeInTheDocument();
-    await waitFor(() => expect(applyMarriageTransaction).toHaveBeenCalled());
+    await waitFor(() => expect(submitAutoApply).toHaveBeenCalled());
     await waitFor(() => expect(notifyAutoApplySuccess).toHaveBeenCalledWith("got-married"));
+    // Approval now lives on the /track page, so the banner never completes
+    // steps itself -- it links there instead.
+    expect(onComplete).not.toHaveBeenCalled();
+    const trackLink = await screen.findByRole("link", {
+      name: /track your applications/i,
+    });
+    expect(trackLink).toHaveAttribute("href", "/track");
   });
 
   it("shows a billing stage with the itemized total when a step has a payable fee", () => {
@@ -126,7 +133,7 @@ describe("AutoApplyBanner", () => {
     fireEvent.click(screen.getByRole("button", { name: /yes, auto apply/i }));
     fireEvent.click(screen.getByRole("button", { name: /skip, pay later/i }));
 
-    await waitFor(() => expect(applyMarriageTransaction).toHaveBeenCalled());
+    await waitFor(() => expect(submitAutoApply).toHaveBeenCalled());
     expect(createFeePayment).not.toHaveBeenCalled();
   });
 
@@ -203,7 +210,7 @@ describe("AutoApplyBanner", () => {
 
     render(<AutoApplyBanner journey={base} completed={[]} onComplete={onComplete} />);
 
-    await waitFor(() => expect(applyMarriageTransaction).toHaveBeenCalled());
+    await waitFor(() => expect(submitAutoApply).toHaveBeenCalled());
     expect(window.sessionStorage.getItem("ehakbang:resume-auto-apply")).toBeNull();
   });
 
@@ -231,7 +238,7 @@ describe("AutoApplyBanner", () => {
     render(<AutoApplyBanner journey={withField} completed={[]} onComplete={onComplete} />);
     fireEvent.click(screen.getByRole("button", { name: /yes, auto apply/i }));
 
-    expect(applyMarriageTransaction).not.toHaveBeenCalled();
+    expect(submitAutoApply).not.toHaveBeenCalled();
     expect(screen.getByLabelText(/proposed business name/i)).toBeInTheDocument();
   });
 
@@ -264,10 +271,12 @@ describe("AutoApplyBanner", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
-    await waitFor(() => expect(applyMarriageTransaction).toHaveBeenCalled());
-    expect(applyMarriageTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({ step_number: 1 }),
-      { proposed_business_name: "Juana's Sari-Sari Store" },
+    await waitFor(() => expect(submitAutoApply).toHaveBeenCalled());
+    expect(submitAutoApply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stepNumber: 1,
+        fieldAnswers: { proposed_business_name: "Juana's Sari-Sari Store" },
+      }),
     );
   });
 

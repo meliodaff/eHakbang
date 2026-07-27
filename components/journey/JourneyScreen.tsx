@@ -12,6 +12,7 @@ import {
   markStepsDone,
   markStepAutoApplied,
   markStepsClaimed,
+  markStepsSubmitted,
   setFieldAnswers,
 } from "@/lib/journey-store";
 import { useIdWallet, stepFulfilledByWallet } from "@/lib/id-wallet";
@@ -131,6 +132,14 @@ export function JourneyScreen({
     setJourney((current) => (current ? markStepsClaimed(current, [stepNumber]) : current));
   }
 
+  // A step's application was submitted to its agency -- persist the
+  // submitted-but-awaiting state so the tracking dashboard reflects it.
+  function handleSubmit(stepNumber: number) {
+    setJourney((current) =>
+      current ? markStepsSubmitted(current, [stepNumber]) : current,
+    );
+  }
+
   function handleSubmitFields(answers: Record<number, Record<string, string>>) {
     setJourney((current) => (current ? setFieldAnswers(current, answers) : current));
   }
@@ -227,6 +236,7 @@ export function JourneyScreen({
         onComplete={handleComplete}
         onAutoApplied={handleAutoApplied}
         onClaim={handleClaim}
+        onSubmit={handleSubmit}
         onSubmitFields={handleSubmitFields}
       />
 

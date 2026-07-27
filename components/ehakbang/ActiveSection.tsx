@@ -6,7 +6,6 @@ import { useJourneys } from "@/lib/journey-store";
 import { ServiceTile } from "@/components/egov/ServiceTile";
 import {
   ListIcon,
-  ArrowRightIcon,
   InfoIcon,
   IdCardIcon,
   JobsIcon,
@@ -25,6 +24,13 @@ export function EhakbangActiveSection() {
   const remaining = active
     ? active.total_steps - active.completed_step_numbers.length
     : 0;
+  // Steps whose application was submitted but hasn't been completed yet --
+  // i.e. still waiting for the agency to respond.
+  const awaiting = active
+    ? (active.submitted_step_numbers ?? []).filter(
+        (n) => !active.completed_step_numbers.includes(n),
+      )
+    : [];
   const activeCount = journeys.filter((j) => j.status === "active").length;
   const totalRecordUpdates = journeys.reduce((s, j) => s + j.record_updates, 0);
   const totalBenefitClaims = journeys.reduce((s, j) => s + j.benefit_claims, 0);
@@ -39,14 +45,6 @@ export function EhakbangActiveSection() {
         <div className="flex touch-pan-x gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ServiceTile icon={<ListIcon />} label="My Journeys" href="/journeys" />
           <ServiceTile icon={<IdCardIcon />} label="My IDs" href="/wallet" />
-          {active && (
-            <ServiceTile
-              icon={<ArrowRightIcon />}
-              label="Continue"
-              href={continueHref}
-              badge={remaining > 0 ? `${remaining} left` : undefined}
-            />
-          )}
           <ServiceTile icon={<InfoIcon />} label="About" href="/about" />
         </div>
       </div>
@@ -94,6 +92,18 @@ export function EhakbangActiveSection() {
               />
             ))}
           </div>
+
+          {awaiting.length > 0 && (
+            <Link
+              href="/track"
+              className="mt-3 flex items-center justify-center gap-1.5 rounded-egov bg-egov-blue-050 px-3 py-2 text-center text-xs font-semibold text-egov-blue transition-colors hover:bg-egov-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+            >
+              <span aria-hidden>🕓</span>
+              {awaiting.length} application{awaiting.length === 1 ? "" : "s"}{" "}
+              submitted — track the agencies&rsquo; response
+              <span aria-hidden>→</span>
+            </Link>
+          )}
         </div>
       )}
 

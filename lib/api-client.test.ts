@@ -158,88 +158,39 @@ describe("api-client (fee payment via /api/payment)", () => {
   });
 });
 
-describe("api-client (Auto Apply queue via /api/application-queue)", () => {
+describe("api-client (Auto Apply, local — no backend queue)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("POSTs to /api/application-queue and returns the queue state", async () => {
-    const state = {
-      journeyId: "ehakbang:journey:event:had-a-baby",
-      stepNumber: 1,
-      status: "pending" as const,
-      createdAt: "2026-07-27T00:00:00.000Z",
-      acceptedAt: null,
-    };
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => state });
+  it("submitAutoApply resolves to a pending state without any network call", async () => {
+    const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await submitAutoApply({
-      journeyId: state.journeyId,
+      journeyId: "ehakbang:journey:event:had-a-baby",
       stepNumber: 1,
       agencyName: "Test Agency",
       stepTitle: "Test step",
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/application-queue",
-      expect.objectContaining({ method: "POST" }),
-    );
-    expect(result).toEqual(state);
-  });
-
-  it("throws when /api/application-queue responds with an error", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "boom" }) }),
-    );
-
-    await expect(
-      submitAutoApply({
-        journeyId: "j",
-        stepNumber: 1,
-        agencyName: "Test Agency",
-        stepTitle: "Test step",
-      }),
-    ).rejects.toThrow("boom");
-  });
-
-  it("GETs /api/application-queue/status and returns the queue state", async () => {
-    const state = {
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
       journeyId: "ehakbang:journey:event:had-a-baby",
       stepNumber: 1,
-      status: "accepted" as const,
-      createdAt: "2026-07-27T00:00:00.000Z",
-      acceptedAt: "2026-07-27T00:00:15.000Z",
-    };
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => state });
+      status: "pending",
+      acceptedAt: null,
+    });
+  });
+
+  it("fetchAutoApplyStatus resolves null (idle) without any network call", async () => {
+    const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await fetchAutoApplyStatus({ journeyId: state.journeyId, stepNumber: 1 });
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      `/api/application-queue/status?journeyId=${encodeURIComponent(state.journeyId)}&stepNumber=1`,
-    );
-    expect(result).toEqual(state);
-  });
-
-  it("returns null (idle) when the status route responds 404", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({ error: "No queue entry found" }) }),
-    );
-
     const result = await fetchAutoApplyStatus({ journeyId: "j", stepNumber: 1 });
+
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(result).toBeNull();
-  });
-
-  it("throws on a non-404 error from the status route", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({ error: "boom" }) }),
-    );
-
-    await expect(fetchAutoApplyStatus({ journeyId: "j", stepNumber: 1 })).rejects.toThrow("boom");
   });
 });
 

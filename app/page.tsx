@@ -34,10 +34,14 @@ export default function Home() {
       {/* Top bar: wordmark + greeting + avatar */}
       <div className="sticky top-0 z-20 bg-surface px-5 pb-2 pt-4">
         <div className="flex items-center justify-between">
-          <span className="text-xl font-extrabold tracking-tight">
-            <span className="text-egov-blue">eGov</span>
-            <span className="text-egov-navy">PH</span>
-          </span>
+          <Image
+            src="/egovph-header.png"
+            alt="eGovPH"
+            width={112}
+            height={33}
+            priority
+            className="h-8 w-auto shrink-0"
+          />
           <div className="flex items-center gap-2.5">
             <div className="text-right">
               <p className="text-sm font-bold leading-tight text-foreground">

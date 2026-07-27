@@ -5,135 +5,101 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // out so this server-side module can still be unit tested here.
 vi.mock("server-only", () => ({}));
 
-const { getSupabaseServerClient } = vi.hoisted(() => ({
-  getSupabaseServerClient: vi.fn(),
-}));
-vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient }));
-
-import { upsertQueueSubmission, getQueueState } from "./application-queue";
-
-function makeSupabaseMock(opts: {
-  upsertResult?: { data: unknown; error: unknown };
-  selectResults?: Array<{ data: unknown; error: unknown }>;
-}) {
-  const selectResults = opts.selectResults ?? [];
-  const builder = {
-    upsert: vi.fn(() => builder),
-    select: vi.fn(() => builder),
-    update: vi.fn(() => builder),
-    eq: vi.fn(() => builder),
-    single: vi.fn(async () => opts.upsertResult ?? { data: null, error: null }),
-    maybeSingle: vi.fn(async () => selectResults.shift() ?? { data: null, error: null }),
-  };
-  return { from: vi.fn(() => builder) };
-}
-
 const NOW = new Date("2026-07-27T12:00:00.000Z");
 
-const BASE_ROW = {
-  journey_id: "ehakbang:journey:event:had-a-baby",
-  step_number: 1,
-  event_id: "had-a-baby",
-  agency_name: "Test Agency",
-  step_title: "Test step",
-  field_answers: {},
-  status: "pending" as const,
-  created_at: NOW.toISOString(),
-  accepted_at: null,
+const BASE_INPUT = {
+  journeyId: "ehakbang:journey:event:had-a-baby",
+  stepNumber: 1,
+  eventId: "had-a-baby",
+  agencyName: "Test Agency",
+  stepTitle: "Test step",
 };
 
 describe("upsertQueueSubmission", () => {
-  beforeEach(() => {
-    getSupabaseServerClient.mockReset();
+  beforeEach(async () => {
+    vi.resetModules();
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
   });
 
-  it("upserts and returns the pending state", async () => {
-    getSupabaseServerClient.mockReturnValue(
-      makeSupabaseMock({ upsertResult: { data: BASE_ROW, error: null } }),
-    );
+  it("stores and returns the pending state", async () => {
+    const { upsertQueueSubmission } = await import("./application-queue");
 
-    const result = await upsertQueueSubmission({
-      journeyId: BASE_ROW.journey_id,
-      stepNumber: 1,
-      eventId: "had-a-baby",
-      agencyName: "Test Agency",
-      stepTitle: "Test step",
-    });
+    const result = await upsertQueueSubmission(BASE_INPUT);
 
     expect(result.status).toBe("pending");
-    expect(result.journeyId).toBe(BASE_ROW.journey_id);
+    expect(result.journeyId).toBe(BASE_INPUT.journeyId);
+    expect(result.createdAt).toBe(NOW.toISOString());
+    expect(result.acceptedAt).toBeNull();
   });
 
-  it("throws when the upsert fails", async () => {
-    getSupabaseServerClient.mockReturnValue(
-      makeSupabaseMock({ upsertResult: { data: null, error: new Error("boom") } }),
-    );
+  it("re-queuing resets an existing entry back to pending", async () => {
+    const { upsertQueueSubmission, getQueueState } = await import("./application-queue");
 
-    await expect(
-      upsertQueueSubmission({
-        journeyId: BASE_ROW.journey_id,
-        stepNumber: 1,
-        agencyName: "Test Agency",
-        stepTitle: "Test step",
-      }),
-    ).rejects.toThrow();
+    await upsertQueueSubmission(BASE_INPUT);
+    vi.setSystemTime(new Date(NOW.getTime() + 20_000));
+    const accepted = await getQueueState({
+      journeyId: BASE_INPUT.journeyId,
+      stepNumber: BASE_INPUT.stepNumber,
+    });
+    expect(accepted?.status).toBe("accepted");
+
+    const requeued = await upsertQueueSubmission(BASE_INPUT);
+    expect(requeued.status).toBe("pending");
+    expect(requeued.acceptedAt).toBeNull();
   });
 });
 
 describe("getQueueState", () => {
-  beforeEach(() => {
-    getSupabaseServerClient.mockReset();
+  beforeEach(async () => {
+    vi.resetModules();
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
   });
 
-  it("returns null when no row exists", async () => {
-    getSupabaseServerClient.mockReturnValue(
-      makeSupabaseMock({ selectResults: [{ data: null, error: null }] }),
-    );
+  it("returns null when no entry exists", async () => {
+    const { getQueueState } = await import("./application-queue");
 
-    const result = await getQueueState({ journeyId: BASE_ROW.journey_id, stepNumber: 1 });
+    const result = await getQueueState({ journeyId: BASE_INPUT.journeyId, stepNumber: 1 });
     expect(result).toBeNull();
   });
 
   it("returns pending as-is when the mock delay hasn't elapsed", async () => {
-    getSupabaseServerClient.mockReturnValue(
-      makeSupabaseMock({ selectResults: [{ data: BASE_ROW, error: null }] }),
-    );
+    const { upsertQueueSubmission, getQueueState } = await import("./application-queue");
 
-    const result = await getQueueState({ journeyId: BASE_ROW.journey_id, stepNumber: 1 });
+    await upsertQueueSubmission(BASE_INPUT);
+    const result = await getQueueState({
+      journeyId: BASE_INPUT.journeyId,
+      stepNumber: BASE_INPUT.stepNumber,
+    });
     expect(result?.status).toBe("pending");
   });
 
   it("flips to accepted once the mock delay has elapsed", async () => {
-    const staleRow = {
-      ...BASE_ROW,
-      created_at: new Date(NOW.getTime() - 20_000).toISOString(),
-    };
-    const acceptedRow = { ...staleRow, status: "accepted" as const, accepted_at: NOW.toISOString() };
-    getSupabaseServerClient.mockReturnValue(
-      makeSupabaseMock({
-        selectResults: [
-          { data: staleRow, error: null },
-          { data: acceptedRow, error: null },
-        ],
-      }),
-    );
+    const { upsertQueueSubmission, getQueueState } = await import("./application-queue");
 
-    const result = await getQueueState({ journeyId: BASE_ROW.journey_id, stepNumber: 1 });
+    await upsertQueueSubmission(BASE_INPUT);
+    vi.setSystemTime(new Date(NOW.getTime() + 20_000));
+
+    const result = await getQueueState({
+      journeyId: BASE_INPUT.journeyId,
+      stepNumber: BASE_INPUT.stepNumber,
+    });
     expect(result?.status).toBe("accepted");
     expect(result?.acceptedAt).not.toBeNull();
   });
 
-  it("returns already-accepted rows unchanged", async () => {
-    const acceptedRow = { ...BASE_ROW, status: "accepted" as const, accepted_at: NOW.toISOString() };
-    getSupabaseServerClient.mockReturnValue(
-      makeSupabaseMock({ selectResults: [{ data: acceptedRow, error: null }] }),
-    );
+  it("returns already-accepted entries unchanged", async () => {
+    const { upsertQueueSubmission, getQueueState } = await import("./application-queue");
 
-    const result = await getQueueState({ journeyId: BASE_ROW.journey_id, stepNumber: 1 });
+    await upsertQueueSubmission(BASE_INPUT);
+    vi.setSystemTime(new Date(NOW.getTime() + 20_000));
+    await getQueueState({ journeyId: BASE_INPUT.journeyId, stepNumber: BASE_INPUT.stepNumber });
+
+    const result = await getQueueState({
+      journeyId: BASE_INPUT.journeyId,
+      stepNumber: BASE_INPUT.stepNumber,
+    });
     expect(result?.status).toBe("accepted");
   });
 });

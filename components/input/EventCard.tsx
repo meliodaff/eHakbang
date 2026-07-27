@@ -16,7 +16,7 @@ export function EventCard({
     <button
       type="button"
       onClick={() => onSelect(event)}
-      className="group flex w-full flex-col items-center gap-1.5 rounded-egov p-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+      className="group flex w-full touch-manipulation flex-col items-center gap-1.5 rounded-egov p-1.5 transition-colors active:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
     >
       <span
         aria-hidden

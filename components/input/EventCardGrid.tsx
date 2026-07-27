@@ -20,27 +20,33 @@ export function EventCardGrid() {
   const [showMore, setShowMore] = useState(false);
 
   function handleSelect(event: LifeEvent) {
-    if (isCivilStatusEvent(event.id)) {
-      const catalog = getJourneyByEventId(event.id);
-      const stored = catalog ? getStoredJourney(catalog.id) : undefined;
-      if (stored?.status === "completed") {
-        // Already verified and completed once — no need to go through
-        // confirm/document/face-verify again. Show the info read-only,
-        // without prompting to archive or start another journey.
-        router.push(
-          `/journey/complete?id=${encodeURIComponent(stored.id)}&mode=info`,
-        );
+    try {
+      if (isCivilStatusEvent(event.id)) {
+        const catalog = getJourneyByEventId(event.id);
+        const stored = catalog ? getStoredJourney(catalog.id) : undefined;
+        if (stored?.status === "completed") {
+          // Already verified and completed once — no need to go through
+          // confirm/document/face-verify again. Show the info read-only,
+          // without prompting to archive or start another journey.
+          router.push(
+            `/journey/complete?id=${encodeURIComponent(stored.id)}&mode=info`,
+          );
+          return;
+        }
+        router.push(`/journey/confirm?event=${encodeURIComponent(event.id)}`);
         return;
       }
-      router.push(`/journey/confirm?event=${encodeURIComponent(event.id)}`);
-      return;
+      // Verification-gated events (e.g. Just Graduated) route through the
+      // document + liveness flow before their journey checklist is shown.
+      const target = eventRequiresVerification(event.id)
+        ? `/journey/verify?event=${encodeURIComponent(event.id)}`
+        : `/journey?event=${encodeURIComponent(event.id)}`;
+      router.push(target);
+    } catch (err) {
+      // TEMPORARY diagnostic — surfaces the real error on-device since
+      // remote devtools aren't available. Remove once the cause is found.
+      window.alert(`handleSelect failed for ${event.id}: ${String(err)}`);
     }
-    // Verification-gated events (e.g. Just Graduated) route through the
-    // document + liveness flow before their journey checklist is shown.
-    const target = eventRequiresVerification(event.id)
-      ? `/journey/verify?event=${encodeURIComponent(event.id)}`
-      : `/journey?event=${encodeURIComponent(event.id)}`;
-    router.push(target);
   }
 
   return (

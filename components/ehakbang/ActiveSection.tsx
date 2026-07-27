@@ -36,7 +36,7 @@ export function EhakbangActiveSection() {
     <>
       {/* Quick actions */}
       <div className="mt-4">
-        <div className="flex gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex touch-pan-x gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ServiceTile icon={<ListIcon />} label="My Journeys" href="/journeys" />
           <ServiceTile icon={<IdCardIcon />} label="My IDs" href="/wallet" />
           {active && (

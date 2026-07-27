@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EhakbangIcon } from "./ServiceIcons";
+import Image from "next/image";
 
 /**
  * Carousel-style banner promoting the eHakbang service, styled like the eGov
@@ -27,15 +27,18 @@ export function EhakbangFeatureCard() {
         </p>
       </div>
 
-      {/* Decorative panel (original) */}
+      {/* Official eHakbang logo */}
       <div
         aria-hidden
-        className="relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-egov bg-gradient-to-br from-egov-blue to-egov-navy text-white"
+        className="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-egov bg-white"
       >
-        <span className="[&>svg]:h-8 [&>svg]:w-8">
-          <EhakbangIcon />
-        </span>
-        <span className="absolute -right-2 -top-2 h-8 w-8 rounded-full bg-egov-yellow/60" />
+        <Image
+          src="/ehakbang-logo.png"
+          alt=""
+          width={600}
+          height={494}
+          className="h-14 w-20 object-contain"
+        />
       </div>
     </Link>
   );

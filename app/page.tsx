@@ -1,9 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ServiceTile } from "@/components/egov/ServiceTile";
 import { TodayDate } from "@/components/egov/TodayDate";
 import { EhakbangFeatureCard } from "@/components/egov/EhakbangFeatureCard";
 import {
-  EhakbangIcon,
   HealthIcon,
   ReportIcon,
   JobsIcon,
@@ -97,7 +97,20 @@ export default function Home() {
       {/* Horizontal service icons (eHakbang first + representative) */}
       <div className="mt-4">
         <div className="flex gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <ServiceTile icon={<EhakbangIcon />} label="eHakbang" href="/ehakbang" badge="New" />
+          <ServiceTile
+            icon={
+              <Image
+                src="/ehakbang-logo.png"
+                alt=""
+                width={600}
+                height={494}
+                className="h-12 w-12 object-contain"
+              />
+            }
+            label="eHakbang"
+            href="/ehakbang"
+            badge="New"
+          />
           {SERVICES.map((s) => (
             <ServiceTile key={s.label} icon={s.icon} label={s.label} badge={s.badge} />
           ))}

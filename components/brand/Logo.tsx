@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/cn";
 
 /**
@@ -33,7 +34,7 @@ export function EhakbangMark({ className }: { className?: string }) {
 }
 
 /**
- * Full horizontal lockup: mark + "eHakbang" wordmark.
+ * Full horizontal lockup: official eHakbang mark + "Hakbang" wordmark.
  * `onDark` switches the wordmark to white for use on blue headers.
  */
 export function EhakbangLogo({
@@ -44,15 +45,19 @@ export function EhakbangLogo({
   onDark?: boolean;
 }) {
   return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
+    <span className={cn("inline-flex items-center gap-0.5", className)}>
+      <Image
+        src="/ehakbang-logo.png"
+        alt=""
+        width={600}
+        height={494}
+        className="h-7 w-8 object-contain"
+      />
       <span className="whitespace-nowrap text-xl font-extrabold tracking-tight">
         {onDark ? (
-          <span className="text-white">eHakbang</span>
+          <span className="text-white">Hakbang</span>
         ) : (
-          <>
-            <span className="text-egov-blue">e</span>
-            <span className="text-egov-navy">Hakbang</span>
-          </>
+          <span className="text-egov-navy">Hakbang</span>
         )}
       </span>
     </span>

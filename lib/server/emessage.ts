@@ -32,17 +32,31 @@ export function isEmessageConfigured(): boolean {
 export async function pushSms(number: string, message: string): Promise<void> {
   const { baseUrl, token } = getConfig();
 
-  const response = await fetch(`${baseUrl}/messaging/v1/sms/push`, {
-    method: "POST",
-    headers: {
-      "X-EMESSAGE-Auth": token,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ number, message }),
+  console.log("[DEBUG][emessage] POST", `${baseUrl}/messaging/v1/sms/push`, {
+    number,
+    message,
+    token_prefix: token.slice(0, 6) + "…",
   });
 
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}/messaging/v1/sms/push`, {
+      method: "POST",
+      headers: {
+        "X-EMESSAGE-Auth": token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ number, message }),
+    });
+  } catch (err) {
+    console.error("[DEBUG][emessage] fetch itself threw (network/DNS/base URL issue):", err);
+    throw err;
+  }
+
+  const text = await response.text();
+  console.log("[DEBUG][emessage] response", { status: response.status, body: text });
+
   if (!response.ok) {
-    const text = await response.text();
     throw new Error(`eMessage pushSms failed (${response.status}): ${text}`);
   }
 }

@@ -11,10 +11,10 @@ const { getSupabaseServerClient } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient }));
 
-const { generateJourneyWithOpenAI } = vi.hoisted(() => ({
-  generateJourneyWithOpenAI: vi.fn(),
+const { generateJourneyWithEgovAi } = vi.hoisted(() => ({
+  generateJourneyWithEgovAi: vi.fn(),
 }));
-vi.mock("./openai-journey", () => ({ generateJourneyWithOpenAI }));
+vi.mock("./egov-ai", () => ({ generateJourneyWithEgovAi }));
 
 import { getOrRegenerateJourney } from "./journey-requirements";
 
@@ -36,7 +36,7 @@ const NOW = new Date("2026-07-22T12:00:00.000Z");
 
 const AI_GENERATED = {
   summary: "AI summary",
-  model: "gpt-4.1",
+  model: "egov-ai-assistant",
   steps: [
     {
       agency_name: "Social Security System",
@@ -59,11 +59,11 @@ describe("getOrRegenerateJourney", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
-    generateJourneyWithOpenAI.mockReset();
+    generateJourneyWithEgovAi.mockReset();
     getSupabaseServerClient.mockReset();
   });
 
-  it("serves a fresh cached row without calling OpenAI", async () => {
+  it("serves a fresh cached row without calling the eGov AI Assistant", async () => {
     const existing = {
       event_id: "retired",
       language: "en",
@@ -83,10 +83,10 @@ describe("getOrRegenerateJourney", () => {
     expect(result.source).toBe("cache");
     expect(result.regenerated).toBe(false);
     expect(result.journey.summary).toBe("cached summary");
-    expect(generateJourneyWithOpenAI).not.toHaveBeenCalled();
+    expect(generateJourneyWithEgovAi).not.toHaveBeenCalled();
   });
 
-  it("regenerates via OpenAI and upserts when the cached row is stale", async () => {
+  it("regenerates via the eGov AI Assistant and upserts when the cached row is stale", async () => {
     const existing = {
       event_id: "retired",
       language: "en",
@@ -114,11 +114,11 @@ describe("getOrRegenerateJourney", () => {
     getSupabaseServerClient.mockReturnValue(
       makeSupabaseMock({ existing, upsertResult: { data: upserted, error: null } }),
     );
-    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+    generateJourneyWithEgovAi.mockResolvedValue(AI_GENERATED);
 
     const result = await getOrRegenerateJourney({ eventId: "retired" });
 
-    expect(generateJourneyWithOpenAI).toHaveBeenCalledWith(
+    expect(generateJourneyWithEgovAi).toHaveBeenCalledWith(
       expect.objectContaining({ eventId: "retired", language: "en" }),
     );
     expect(result.source).toBe("ai");
@@ -142,7 +142,7 @@ describe("getOrRegenerateJourney", () => {
     getSupabaseServerClient.mockReturnValue(
       makeSupabaseMock({ existing: null, upsertResult: { data: upserted, error: null } }),
     );
-    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+    generateJourneyWithEgovAi.mockResolvedValue(AI_GENERATED);
 
     const result = await getOrRegenerateJourney({ eventId: "annulment" });
 
@@ -162,9 +162,9 @@ describe("getOrRegenerateJourney", () => {
     expect(result.journey.id).toBe(getJourneyByEventId("retired")!.id);
   });
 
-  it("falls back to the seed journey when OpenAI fails", async () => {
+  it("falls back to the seed journey when the eGov AI Assistant fails", async () => {
     getSupabaseServerClient.mockReturnValue(makeSupabaseMock({ existing: null }));
-    generateJourneyWithOpenAI.mockRejectedValue(new Error("OpenAI error"));
+    generateJourneyWithEgovAi.mockRejectedValue(new Error("eGov AI Assistant error"));
 
     const result = await getOrRegenerateJourney({ eventId: "retired" });
 

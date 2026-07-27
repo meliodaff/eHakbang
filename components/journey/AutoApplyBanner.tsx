@@ -77,6 +77,8 @@ export function AutoApplyBanner({
     }
     setCurrentStepNumber(null);
     setStage("done");
+    // eslint-disable-next-line no-console
+    console.log("[DEBUG][AutoApplyBanner] applying loop finished, triggering SMS notify for", journey.event_id);
     void notifyAutoApplySuccess(journey.event_id ?? "");
   }
 

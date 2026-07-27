@@ -191,14 +191,23 @@ export async function fetchPaymentStatus(uuid: string): Promise<PaymentStatus> {
  * failure must never surface as an error to the auto-apply flow itself.
  */
 export async function notifyAutoApplySuccess(eventId: string): Promise<void> {
+  // eslint-disable-next-line no-console
+  console.log("[DEBUG][notifyAutoApplySuccess] POSTing to /api/notifications/auto-apply", { eventId });
   try {
     const res = await fetch("/api/notifications/auto-apply", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ eventId }),
     });
+    // NOTE: the route always responds with HTTP 200 even when the SMS send
+    // failed (it encodes success/failure in the JSON body's `sent` field
+    // instead), so `res.ok` alone can't tell us whether it actually worked --
+    // read the body every time while debugging.
+    const bodyText = await res.text();
+    // eslint-disable-next-line no-console
+    console.log("[DEBUG][notifyAutoApplySuccess] response", { status: res.status, body: bodyText });
     if (!res.ok) {
-      console.error("[notifyAutoApplySuccess] request failed:", await res.text());
+      console.error("[notifyAutoApplySuccess] request failed:", bodyText);
     }
   } catch (err) {
     console.error("[notifyAutoApplySuccess] request failed:", err);

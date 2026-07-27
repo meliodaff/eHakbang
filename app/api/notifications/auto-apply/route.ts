@@ -34,16 +34,30 @@ export async function POST(request: NextRequest) {
   const event = getLifeEventById(body.eventId);
   const eventLabel = event?.sublabel ?? event?.label ?? "life event";
 
-  if (!isEmessageConfigured()) {
+  console.log("[DEBUG][api/notifications/auto-apply] received request", {
+    eventId: body.eventId,
+    eventLabel,
+    recipient: TEMP_TEST_RECIPIENT,
+  });
+
+  const configured = isEmessageConfigured();
+  console.log("[DEBUG][api/notifications/auto-apply] isEmessageConfigured() =", configured, {
+    EMESSAGE_BASE_URL_set: Boolean(process.env.EMESSAGE_BASE_URL),
+    EMESSAGE_API_TOKEN_set: Boolean(process.env.EMESSAGE_API_TOKEN),
+  });
+
+  if (!configured) {
     console.error("[api/notifications/auto-apply] eMessage is not configured");
     return NextResponse.json({ sent: false }, { status: 200 });
   }
 
   try {
+    console.log("[DEBUG][api/notifications/auto-apply] calling pushSms...");
     await pushSms(
       TEMP_TEST_RECIPIENT,
       `eHakbang: Your ${eventLabel} application was successfully submitted to all agencies.`,
     );
+    console.log("[DEBUG][api/notifications/auto-apply] pushSms succeeded");
     return NextResponse.json({ sent: true }, { status: 200 });
   } catch (err) {
     console.error("[api/notifications/auto-apply] pushSms failed:", err);

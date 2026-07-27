@@ -4,8 +4,9 @@ import type { Journey } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 
 /**
- * Journey summary header (PRD §10.3): life-event label + emoji, the plain
- * language summary, and count badges for record updates vs benefit claims.
+ * Journey summary header (PRD §10.3): life-event label + emoji, and count
+ * badges for record updates vs benefit claims. Kept short by design -- no
+ * long-form AI-generated text is rendered here.
  */
 export function JourneySummaryHeader({ journey }: { journey: Journey }) {
   const t = useT();
@@ -17,7 +18,6 @@ export function JourneySummaryHeader({ journey }: { journey: Journey }) {
         </span>
         <h1 className="text-xl font-bold">{t(journey.life_event)}</h1>
       </div>
-      <p className="mt-2 text-sm text-egov-blue-050">{t(journey.summary)}</p>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">

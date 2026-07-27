@@ -196,6 +196,8 @@ export const MOCK_JOURNEYS: Journey[] = [
     completed_step_numbers: [1, 2],
     paid_step_numbers: [],
     field_answers: {},
+    auto_applied_step_numbers: [],
+    claimed_step_numbers: [],
   },
   {
     id: "ehakbang:journey:1719500000000",
@@ -214,6 +216,8 @@ export const MOCK_JOURNEYS: Journey[] = [
     completed_step_numbers: [1, 2, 3, 4, 5],
     paid_step_numbers: [],
     field_answers: {},
+    auto_applied_step_numbers: [],
+    claimed_step_numbers: [],
   },
 ];
 

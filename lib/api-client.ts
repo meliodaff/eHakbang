@@ -185,6 +185,100 @@ export async function fetchPaymentStatus(uuid: string): Promise<PaymentStatus> {
   return res.json();
 }
 
+export interface SubmitAutoApplyInput {
+  journeyId: string;
+  stepNumber: number;
+  eventId?: string;
+  agencyName: string;
+  stepTitle: string;
+  fieldAnswers?: Record<string, string>;
+}
+
+export interface AutoApplyQueueState {
+  journeyId: string;
+  stepNumber: number;
+  status: "pending" | "accepted";
+  createdAt: string;
+  acceptedAt: string | null;
+}
+
+/**
+ * Queue a single step for the mocked Auto Apply flow. Uses the server-side
+ * proxy at /api/application-queue, which persists the submission to Supabase
+ * and later auto-accepts it after a short mock delay -- there is no real
+ * agency-submission backend.
+ */
+export async function submitAutoApply(
+  input: SubmitAutoApplyInput,
+): Promise<AutoApplyQueueState> {
+  const res = await fetch("/api/application-queue", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to queue application");
+  }
+  return res.json();
+}
+
+/**
+ * Check a step's current Auto Apply queue status via
+ * /api/application-queue/status. Returns null when the step has never been
+ * auto-applied (idle), rather than throwing.
+ */
+export async function fetchAutoApplyStatus(
+  input: { journeyId: string; stepNumber: number },
+): Promise<AutoApplyQueueState | null> {
+  const params = new URLSearchParams({
+    journeyId: input.journeyId,
+    stepNumber: String(input.stepNumber),
+  });
+  const res = await fetch(`/api/application-queue/status?${params.toString()}`);
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to fetch application queue status");
+  }
+  return res.json();
+}
+
+export interface AskStepContext {
+  step_title: string;
+  agency_name: string;
+  reason: string;
+  documents_required: string[];
+  estimated_time: string;
+  important_note: string | null;
+  fee?: { amount: string; how_to_pay: string } | null;
+  required_fields?: Array<{ label: string; hint?: string | null }>;
+}
+
+export interface AskAboutStepInput {
+  question: string;
+  language?: Language;
+  step: AskStepContext;
+}
+
+/**
+ * Ask a concise, step-scoped question via /api/ask-step (OpenAI-backed).
+ */
+export async function askAboutStep(
+  input: AskAboutStepInput,
+): Promise<{ answer: string }> {
+  const res = await fetch("/api/ask-step", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to answer question");
+  }
+  return res.json();
+}
+
 /**
  * Notify the citizen (via SMS, see /api/notifications/auto-apply) that their
  * auto-apply submission finished successfully. Best-effort -- a notification

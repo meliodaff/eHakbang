@@ -10,6 +10,9 @@ import {
   getStoredJourney,
   completeStep,
   markStepsDone,
+  markStepAutoApplied,
+  markStepsClaimed,
+  setFieldAnswers,
 } from "@/lib/journey-store";
 import { useIdWallet, stepFulfilledByWallet } from "@/lib/id-wallet";
 import { eventSupportsApplyAll } from "@/lib/journey-features";
@@ -91,22 +94,45 @@ export function JourneyScreen({
     journey.total_steps > 0 &&
     effectiveCompleted.length >= journey.total_steps;
 
+  // Once every step is done, routing to the completion screen is delayed
+  // slightly so the "✓ Completed"/badge transition is visible first.
+  function routeToCompletionIfDone(updated: Journey) {
+    if (updated.status === "completed") {
+      setTimeout(
+        () => router.push(`/journey/complete?id=${encodeURIComponent(updated.id)}`),
+        400,
+      );
+    }
+  }
+
   function handleComplete(stepNumber: number) {
     setJourney((current) => {
       if (!current) return current;
       // Fold wallet-satisfied steps in so progress/completion stay accurate.
       const updated = completeStep(current, stepNumber, walletStepNumbers);
-      if (updated.status === "completed") {
-        setTimeout(
-          () =>
-            router.push(
-              `/journey/complete?id=${encodeURIComponent(updated.id)}`,
-            ),
-          400,
-        );
-      }
+      routeToCompletionIfDone(updated);
       return updated;
     });
+  }
+
+  // Step completed via the mocked Auto Apply queue (see StepCard) -- unlike
+  // handleComplete, also records the step as auto-applied so the "claim your
+  // document" prompt (here and in the dashboard's To Do section) shows up.
+  function handleAutoApplied(stepNumber: number) {
+    setJourney((current) => {
+      if (!current) return current;
+      const updated = markStepAutoApplied(current, stepNumber, walletStepNumbers);
+      routeToCompletionIfDone(updated);
+      return updated;
+    });
+  }
+
+  function handleClaim(stepNumber: number) {
+    setJourney((current) => (current ? markStepsClaimed(current, [stepNumber]) : current));
+  }
+
+  function handleSubmitFields(answers: Record<number, Record<string, string>>) {
+    setJourney((current) => (current ? setFieldAnswers(current, answers) : current));
   }
 
   function handleFinish() {
@@ -199,6 +225,9 @@ export function JourneyScreen({
           ) : null
         }
         onComplete={handleComplete}
+        onAutoApplied={handleAutoApplied}
+        onClaim={handleClaim}
+        onSubmitFields={handleSubmitFields}
       />
 
       {allDone && (

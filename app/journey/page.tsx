@@ -11,7 +11,7 @@ export default async function JourneyPage({
 }) {
   const { event } = await searchParams;
   // Prefetch AI-generated (cached or freshly regenerated) requirements
-  // server-side so the client never needs its own eGov AI/Supabase keys.
+  // server-side so the client never needs its own OpenAI/Supabase keys.
   // Language is fixed to "en" here since the FIL toggle is client-only.
   const result =
     event && getLifeEventById(event)

@@ -3,8 +3,8 @@ import type { Journey, JourneyStep } from "./types";
 /**
  * Per-life-event seed journeys. Requirements are normally AI-generated and
  * cached in Supabase (see lib/server/journey-requirements.ts); this map is
- * the fallback used when the eGov AI Assistant/Supabase aren't configured or
- * a call fails, so local dev and offline use still work. Also used directly by
+ * the fallback used when OpenAI/Supabase aren't configured or a call fails,
+ * so local dev and offline use still work. Also used directly by
  * JourneyScreen when no server-prefetched journey is available (e.g. tests).
  * Users are always routed to the official page for exact amounts/requirements.
  */
@@ -39,6 +39,8 @@ function build(
     completed_step_numbers: [],
     paid_step_numbers: [],
     field_answers: {},
+    auto_applied_step_numbers: [],
+    claimed_step_numbers: [],
   };
 }
 

@@ -3,12 +3,12 @@ import type { Journey, JourneyStep, Language } from "@/lib/types";
 import { getLifeEventById } from "@/lib/events";
 import { getJourneyByEventId } from "@/lib/event-journeys";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { generateJourneyWithEgovAi } from "./egov-ai";
+import { generateJourneyWithOpenAI } from "./openai-journey";
 
 /**
  * Cache-or-regenerate layer for AI-generated journey requirements. Staleness
  * is checked lazily on read (no cron): a cached row older than 24h triggers a
- * regeneration; anything else (missing config, eGov AI/Supabase errors) falls
+ * regeneration; anything else (missing config, OpenAI/Supabase errors) falls
  * back to the hand-written seed in `lib/event-journeys.ts` so the app keeps
  * working without any keys configured.
  */
@@ -56,6 +56,8 @@ function rowToJourney(row: JourneyRequirementsRow, language: Language): Journey 
     completed_step_numbers: [],
     paid_step_numbers: [],
     field_answers: {},
+    auto_applied_step_numbers: [],
+    claimed_step_numbers: [],
   };
 }
 
@@ -91,7 +93,7 @@ export async function getOrRegenerateJourney(input: {
       }
     }
 
-    const generated = await generateJourneyWithEgovAi({
+    const generated = await generateJourneyWithOpenAI({
       eventId: input.eventId,
       lifeEvent: event.description,
       language,

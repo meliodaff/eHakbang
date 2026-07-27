@@ -203,45 +203,49 @@ export interface AutoApplyQueueState {
 }
 
 /**
- * Queue a single step for the mocked Auto Apply flow. Uses the server-side
- * proxy at /api/application-queue, which persists the submission to Supabase
- * and later auto-accepts it after a short mock delay -- there is no real
- * agency-submission backend.
+ * Submit a single step's application to its agency. There is no real agency
+ * backend and no server-side queue -- the submission is recorded locally (see
+ * the journey store's `submitted_step_numbers`) and immediately resolves to a
+ * "pending" state, i.e. awaiting the agency's response. The submitted state
+ * is persisted by the caller via the journey store, not here, so it survives
+ * navigation and shows on the tracking dashboard.
  */
 export async function submitAutoApply(
   input: SubmitAutoApplyInput,
 ): Promise<AutoApplyQueueState> {
-  const res = await fetch("/api/application-queue", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error ?? "Failed to queue application");
-  }
-  return res.json();
+  // Brief delay so the UI's "Submitting…" transition is visible.
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  return {
+    journeyId: input.journeyId,
+    stepNumber: input.stepNumber,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+    acceptedAt: null,
+  };
 }
 
 /**
- * Check a step's current Auto Apply queue status via
- * /api/application-queue/status. Returns null when the step has never been
- * auto-applied (idle), rather than throwing.
+ * Local stand-in for the old queue-status poll. With no backend queue there
+ * is nothing to poll: a submitted step simply stays "pending" (awaiting the
+ * agency) until an agency reacts, so this always resolves to null (idle) and
+ * never reports "accepted" on its own.
  */
 export async function fetchAutoApplyStatus(
-  input: { journeyId: string; stepNumber: number },
+  _input: { journeyId: string; stepNumber: number },
 ): Promise<AutoApplyQueueState | null> {
-  const params = new URLSearchParams({
-    journeyId: input.journeyId,
-    stepNumber: String(input.stepNumber),
-  });
-  const res = await fetch(`/api/application-queue/status?${params.toString()}`);
-  if (res.status === 404) return null;
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error ?? "Failed to fetch application queue status");
-  }
-  return res.json();
+  return null;
+}
+
+/**
+ * Demo-only control that locally simulates every agency responding to and
+ * approving the submitted applications for one journey. Resolves immediately;
+ * the caller marks the affected steps complete.
+ */
+export async function simulateAgencyApproval(
+  _input: { journeyId: string },
+): Promise<{ acceptedStepNumbers: number[] }> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return { acceptedStepNumbers: [] };
 }
 
 export interface AskStepContext {

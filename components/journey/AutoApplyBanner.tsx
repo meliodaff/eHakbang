@@ -1,20 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { Journey, JourneyStep } from "@/lib/types";
 import {
-  applyMarriageTransaction,
   createFeePayment,
   notifyAutoApplySuccess,
+  submitAutoApply,
 } from "@/lib/api-client";
 import { isCivilStatusEvent, getCivilStatusTransition } from "@/lib/civil-status-events";
 import { getFeeBill, hasPayableFees, formatCurrency } from "@/lib/journey-fees";
 import { getMissingRequiredFields } from "@/lib/journey-fields";
-import { setFieldAnswers } from "@/lib/journey-store";
+import { setFieldAnswers, markStepsSubmitted } from "@/lib/journey-store";
 import { StepFieldsForm } from "./StepFieldsForm";
 import { cn } from "@/lib/cn";
 
-type Stage = "asking" | "declined" | "fields" | "billing" | "applying" | "done";
+type Stage =
+  | "asking"
+  | "declined"
+  | "fields"
+  | "billing"
+  | "applying"
+  | "done";
 
 const PENDING_PAYMENT_KEY = "ehakbang:pending-payment";
 const RESUME_AUTO_APPLY_KEY = "ehakbang:resume-auto-apply";
@@ -34,11 +41,14 @@ const PAYMENT_VERIFIED_TOKEN_KEY = "ehakbang:payment-verified-token";
 export function AutoApplyBanner({
   journey,
   completed,
-  onComplete,
 }: {
   journey: Journey;
   completed: number[];
-  onComplete: (stepNumber: number) => void;
+  /**
+   * Legacy prop. Agency approval was moved to the /track page, so the banner
+   * no longer completes steps itself; still accepted for call-site compat.
+   */
+  onComplete?: (stepNumber: number) => void;
 }) {
   const [stage, setStage] = useState<Stage>("asking");
   const [currentStepNumber, setCurrentStepNumber] = useState<number | null>(
@@ -47,6 +57,7 @@ export function AutoApplyBanner({
   // Snapshotted when the user confirms, so rows don't vanish from the list
   // as `completed` updates live during the applying/done stages.
   const [applyingSteps, setApplyingSteps] = useState<JourneyStep[]>([]);
+  const [submittedStepNumbers, setSubmittedStepNumbers] = useState<number[]>([]);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   // Steps whose required_fields still need answers -- snapshotted when the
@@ -72,8 +83,18 @@ export function AutoApplyBanner({
     setStage("applying");
     for (const step of stepsToApply) {
       setCurrentStepNumber(step.step_number);
-      await applyMarriageTransaction(step, answers[step.step_number]);
-      onComplete(step.step_number);
+      await submitAutoApply({
+        journeyId: journey.id,
+        stepNumber: step.step_number,
+        eventId: journey.event_id,
+        agencyName: step.agency_name,
+        stepTitle: step.step_title,
+        fieldAnswers: answers[step.step_number],
+      });
+      // Persist the submitted-but-awaiting state so the tracking dashboard
+      // shows it as "waiting for the agencies to respond" after navigation.
+      markStepsSubmitted(journey, [step.step_number]);
+      setSubmittedStepNumbers((current) => [...current, step.step_number]);
     }
     setCurrentStepNumber(null);
     setStage("done");
@@ -296,13 +317,13 @@ export function AutoApplyBanner({
         <div className="flex flex-col gap-3">
           <p className="text-sm font-semibold text-foreground">
             {stage === "applying"
-              ? "Applying your update…"
-              : "All done!"}
+              ? "Submitting your application…"
+              : "Application submitted"}
           </p>
 
           <ul className="flex flex-col gap-2">
             {applyingSteps.map((step) => {
-              const isSubmitted = completed.includes(step.step_number);
+              const isSubmitted = submittedStepNumbers.includes(step.step_number);
               const isSubmitting =
                 !isSubmitted && currentStepNumber === step.step_number;
               return (
@@ -322,7 +343,7 @@ export function AutoApplyBanner({
                     <span
                       className={cn(
                         "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
-                        isSubmitted && "bg-egov-success-bg text-egov-success",
+                        isSubmitted && "bg-egov-blue-100 text-egov-blue",
                         isSubmitting &&
                           "animate-pulse bg-egov-blue-100 text-egov-blue",
                         !isSubmitted &&
@@ -331,18 +352,18 @@ export function AutoApplyBanner({
                       )}
                     >
                       {isSubmitted
-                        ? "✓ Submitted"
+                        ? "Submitted"
                         : isSubmitting
                           ? "Submitting…"
                           : "Pending"}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted">
-                    Civil status:{" "}
+                    Requested civil status update:{" "}
                     {isSubmitted ? (
                       <span>
                         <span className="line-through">{transition.from}</span>{" "}
-                        <span className="font-semibold text-egov-success">
+                        <span className="font-semibold text-egov-blue">
                           → {transition.to}
                         </span>
                       </span>
@@ -362,15 +383,21 @@ export function AutoApplyBanner({
 
           {stage === "done" && (
             <>
-              <p className="text-sm font-semibold text-egov-success">
-                🎉 Your civil status is now {transition.to} on all{" "}
+              <p className="text-sm font-semibold text-foreground">
+                📨 Your application has been submitted to the{" "}
                 {applyingSteps.length}{" "}
-                {applyingSteps.length === 1 ? "ID" : "IDs"}.
+                {applyingSteps.length === 1 ? "agency" : "agencies"}.
               </p>
               <p className="text-xs text-muted">
-                This is a simulated submission — confirm with each agency once
-                you receive their notice.
+                Your applications are now waiting for the agencies to respond.
               </p>
+              <Link
+                href="/track"
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov border border-egov-blue bg-surface px-4 py-2.5 text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+              >
+                Track your applications
+                <span aria-hidden>→</span>
+              </Link>
             </>
           )}
         </div>

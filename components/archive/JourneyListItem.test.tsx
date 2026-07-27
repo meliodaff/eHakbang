@@ -24,15 +24,18 @@ const base: Journey = {
 };
 
 describe("JourneyListItem", () => {
-  it("shows an In Progress badge and Continue link for active journeys", () => {
+  it("shows an In Progress badge and View Track link for active journeys", () => {
     render(
       <ul>
         <JourneyListItem journey={base} />
       </ul>,
     );
     expect(screen.getByText("In Progress")).toBeInTheDocument();
-    const link = screen.getByRole("link", { name: /continue/i });
-    expect(link).toHaveAttribute("href", "/journey");
+    expect(
+      screen.queryByRole("link", { name: /continue/i }),
+    ).not.toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /view track/i });
+    expect(link).toHaveAttribute("href", "/track");
   });
 
   it("shows a Complete badge and View link for archived journeys", () => {

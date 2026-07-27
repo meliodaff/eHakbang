@@ -24,11 +24,9 @@ type QueueUiState =
 /**
  * A single journey step card (PRD FR-05/FR-06). Shows the step number, agency,
  * type badge, title, reason, documents, time estimate, note, an official
- * service link, and an "Auto Apply" flow backed by a mocked Supabase queue
- * (see lib/server/application-queue.ts) -- there is no manual self-attestation
- * anymore; the step completes once the queue is accepted. Auto-applied steps
- * then show a "claim your document at the agency office" prompt until the
- * citizen marks it claimed (also surfaced in the dashboard's "To Do" section).
+ * service link, and an "Auto Apply" flow. Submitting an application records it
+ * locally (see the journey store's markStepsSubmitted); the step then stays
+ * "awaiting the agency's response" until an agency reacts.
  */
 export function StepCard({
   step,
@@ -36,8 +34,10 @@ export function StepCard({
   walletFulfilled = false,
   autoApplied,
   claimed,
+  submitted = false,
   onAutoApplied,
   onClaim,
+  onSubmit,
   journeyId,
   eventId,
   fieldAnswers,
@@ -51,8 +51,12 @@ export function StepCard({
   autoApplied: boolean;
   /** True once the auto-applied step's document has been claimed at the agency office. */
   claimed: boolean;
+  /** True once this step's application has been submitted and is awaiting the agency's response. */
+  submitted?: boolean;
   onAutoApplied: (stepNumber: number) => void;
   onClaim: (stepNumber: number) => void;
+  /** Persists the submitted-but-awaiting state (see journey store's markStepsSubmitted). */
+  onSubmit?: (stepNumber: number) => void;
   /** Stable Journey.id, used as the Auto Apply queue's key alongside step_number. */
   journeyId: string;
   eventId?: string;
@@ -96,6 +100,13 @@ export function StepCard({
     if (completed) return;
     let cancelled = false;
 
+    // A step already submitted (persisted in the store) is awaiting the
+    // agency's response -- show that state directly without a status lookup.
+    if (submitted) {
+      setQueueState({ kind: "pending" });
+      return;
+    }
+
     fetchAutoApplyStatus({ journeyId, stepNumber: step.step_number })
       .then((status) => {
         if (cancelled) return;
@@ -123,10 +134,13 @@ export function StepCard({
     };
     // Deliberately re-runs only when the step identity or completion changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completed, journeyId, step.step_number]);
+  }, [completed, journeyId, step.step_number, submitted]);
 
   async function submit(answers?: Record<string, string>) {
     setQueueState({ kind: "pending" });
+    // Persist the submitted-but-awaiting state so it survives navigation and
+    // shows on the tracking dashboard.
+    onSubmit?.(step.step_number);
     try {
       await submitAutoApply({
         journeyId,
@@ -284,7 +298,7 @@ export function StepCard({
           />
         ) : queueState.kind === "pending" ? (
           <p className="flex min-h-11 animate-pulse items-center justify-center gap-1.5 rounded-egov bg-egov-blue-100 px-4 py-2.5 text-sm font-semibold text-egov-blue">
-            <span aria-hidden>⏳</span> {t("Application pending…")}
+            <span aria-hidden>⏳</span> {t("Submitted — awaiting agency review")}
           </p>
         ) : queueState.kind === "error" ? (
           <div className="flex flex-col gap-2 rounded-egov bg-background p-3">

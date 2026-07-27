@@ -22,6 +22,7 @@ function migrate(journey: Journey): Journey {
     ...journey,
     auto_applied_step_numbers: journey.auto_applied_step_numbers ?? [],
     claimed_step_numbers: journey.claimed_step_numbers ?? [],
+    submitted_step_numbers: journey.submitted_step_numbers ?? [],
   };
 }
 
@@ -69,6 +70,7 @@ function persist(
   fieldAnswers?: Record<number, Record<string, string>>,
   autoAppliedNumbers?: number[],
   claimedNumbers?: number[],
+  submittedNumbers?: number[],
 ): Journey {
   const list = read();
   const idx = list.findIndex((j) => j.id === base.id);
@@ -87,6 +89,9 @@ function persist(
       new Set(autoAppliedNumbers ?? existingAutoApplied(base)),
     ),
     claimed_step_numbers: Array.from(new Set(claimedNumbers ?? existingClaims(base))),
+    submitted_step_numbers: Array.from(
+      new Set(submittedNumbers ?? existingSubmitted(base)),
+    ),
   };
   if (merged.length >= record.total_steps && record.total_steps > 0) {
     record.status = "completed";
@@ -122,6 +127,11 @@ function existingAutoApplied(base: Journey): number[] {
 /** Claimed step numbers already persisted for this journey (or the base's own set). */
 function existingClaims(base: Journey): number[] {
   return getStoredJourney(base.id)?.claimed_step_numbers ?? base.claimed_step_numbers ?? [];
+}
+
+/** Submitted-but-awaiting step numbers already persisted for this journey (or the base's own set). */
+function existingSubmitted(base: Journey): number[] {
+  return getStoredJourney(base.id)?.submitted_step_numbers ?? base.submitted_step_numbers ?? [];
 }
 
 /**
@@ -166,6 +176,24 @@ export function markStepAutoApplied(
     undefined,
     undefined,
     [...existingAutoApplied(base), stepNumber],
+  );
+}
+
+/**
+ * Mark steps' applications as submitted to their agencies and awaiting the
+ * agency's response, persisting the journey on first engagement. These steps
+ * are NOT completed -- they stay in a "waiting for the agencies to respond"
+ * state (surfaced on the tracking dashboard) until an agency reacts.
+ */
+export function markStepsSubmitted(base: Journey, stepNumbers: number[]): Journey {
+  return persist(
+    base,
+    existingCompletions(base),
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    [...existingSubmitted(base), ...stepNumbers],
   );
 }
 

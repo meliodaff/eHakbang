@@ -17,6 +17,7 @@ export function JourneyView({
   onComplete,
   onAutoApplied,
   onClaim,
+  onSubmit,
   onSubmitFields,
 }: {
   journey: Journey;
@@ -29,6 +30,8 @@ export function JourneyView({
   onComplete: (stepNumber: number) => void;
   onAutoApplied: (stepNumber: number) => void;
   onClaim: (stepNumber: number) => void;
+  /** Persists a step's submitted-but-awaiting state (see markStepsSubmitted). */
+  onSubmit: (stepNumber: number) => void;
   /** Persists required_fields answers submitted from a step's Auto Apply flow. */
   onSubmitFields: (answers: Record<number, Record<string, string>>) => void;
 }) {
@@ -52,8 +55,10 @@ export function JourneyView({
             walletFulfilled={walletStepNumbers.includes(step.step_number)}
             autoApplied={journey.auto_applied_step_numbers.includes(step.step_number)}
             claimed={journey.claimed_step_numbers.includes(step.step_number)}
+            submitted={(journey.submitted_step_numbers ?? []).includes(step.step_number)}
             onAutoApplied={onAutoApplied}
             onClaim={onClaim}
+            onSubmit={onSubmit}
             journeyId={journey.id}
             eventId={journey.event_id}
             fieldAnswers={journey.field_answers}

@@ -98,10 +98,16 @@ const FIL: Record<string, string> = {
   "Documents needed": "Mga kailangang dokumento",
   "Estimated time:": "Tinatayang oras:",
   "Go to Official Service": "Pumunta sa Opisyal na Serbisyo",
+  "Auto Apply": "I-auto Apply",
+  "Application pending…": "Naghihintay ang aplikasyon…",
+  "Couldn't check this step's status. Please try again.":
+    "Hindi na-check ang status ng hakbang na ito. Subukan muli.",
+  "Couldn't submit this step. Please try again.":
+    "Hindi naisumite ang hakbang na ito. Subukan muli.",
+  "Try again": "Subukan muli",
+  "Claim your document at": "Kunin ang iyong dokumento sa",
   "Mark as Done": "Markahang Tapos",
-  "Did you complete this step?": "Natapos mo na ba ang hakbang na ito?",
-  Yes: "Oo",
-  "Not Yet": "Hindi Pa",
+  "To Do": "Mga Gagawin",
   Completed: "Tapos na",
   "You already have this — it's in your ID Wallet":
     "Meron ka na nito — nasa iyong ID Wallet",
@@ -112,11 +118,12 @@ const FIL: Record<string, string> = {
   "steps complete": "hakbang tapos",
   "Ask about this step": "Magtanong tungkol sa hakbang na ito",
   Send: "Ipadala",
+  "Asking…": "Nagtatanong…",
+  "Something went wrong answering that. Please try again.":
+    "May nagkamali sa pagsagot niyan. Subukan muli.",
   "Your question about": "Ang iyong tanong tungkol sa",
   "e.g. Kailangan ko ba ng appointment bago pumunta?":
     "hal. Kailangan ko ba ng appointment bago pumunta?",
-  "Answers from eHakbang AI will appear here once connected. For now, please refer to the official service page above.":
-    "Lalabas dito ang mga sagot mula sa eHakbang AI kapag naka-connect na. Sa ngayon, sumangguni sa opisyal na service page sa itaas.",
   "Benefit details and eligibility may change. Always verify current amounts and requirements on the official agency page before proceeding.":
     "Maaaring magbago ang detalye at pagiging kwalipikado sa benepisyo. Palaging tiyakin ang kasalukuyang halaga at requirements sa opisyal na agency page bago magpatuloy.",
   Fee: "Bayad",

@@ -12,11 +12,24 @@ import type { Journey } from "./types";
 const KEY = "ehakbang:journeys";
 const CHANGE_EVENT = "ehakbang:journeys-changed";
 
+/**
+ * Backfills fields added to the Journey shape after some records were
+ * already saved, so older localStorage entries don't crash newer code that
+ * assumes they're always present (e.g. `journey.auto_applied_step_numbers`).
+ */
+function migrate(journey: Journey): Journey {
+  return {
+    ...journey,
+    auto_applied_step_numbers: journey.auto_applied_step_numbers ?? [],
+    claimed_step_numbers: journey.claimed_step_numbers ?? [],
+  };
+}
+
 function read(): Journey[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Journey[]) : [];
+    return raw ? (JSON.parse(raw) as Journey[]).map(migrate) : [];
   } catch {
     return [];
   }
@@ -54,6 +67,8 @@ function persist(
   completedNumbers: number[],
   paidNumbers?: number[],
   fieldAnswers?: Record<number, Record<string, string>>,
+  autoAppliedNumbers?: number[],
+  claimedNumbers?: number[],
 ): Journey {
   const list = read();
   const idx = list.findIndex((j) => j.id === base.id);
@@ -68,6 +83,10 @@ function persist(
     completed_step_numbers: merged,
     paid_step_numbers: Array.from(new Set(paidNumbers ?? existingPayments(base))),
     field_answers: fieldAnswers ?? existingFieldAnswers(base),
+    auto_applied_step_numbers: Array.from(
+      new Set(autoAppliedNumbers ?? existingAutoApplied(base)),
+    ),
+    claimed_step_numbers: Array.from(new Set(claimedNumbers ?? existingClaims(base))),
   };
   if (merged.length >= record.total_steps && record.total_steps > 0) {
     record.status = "completed";
@@ -95,6 +114,16 @@ function existingFieldAnswers(base: Journey): Record<number, Record<string, stri
   return getStoredJourney(base.id)?.field_answers ?? base.field_answers ?? {};
 }
 
+/** Auto-applied step numbers already persisted for this journey (or the base's own set). */
+function existingAutoApplied(base: Journey): number[] {
+  return getStoredJourney(base.id)?.auto_applied_step_numbers ?? base.auto_applied_step_numbers ?? [];
+}
+
+/** Claimed step numbers already persisted for this journey (or the base's own set). */
+function existingClaims(base: Journey): number[] {
+  return getStoredJourney(base.id)?.claimed_step_numbers ?? base.claimed_step_numbers ?? [];
+}
+
 /**
  * Mark a step complete, persisting the journey on first engagement.
  * `base` is the journey being viewed (from the catalog or the store).
@@ -117,6 +146,42 @@ export function completeStep(
  */
 export function markStepsDone(base: Journey, stepNumbers: number[]): Journey {
   return persist(base, [...existingCompletions(base), ...stepNumbers]);
+}
+
+/**
+ * Mark a step complete via the mocked Auto Apply queue, persisting the
+ * journey on first engagement. Like completeStep, but also records the step
+ * in auto_applied_step_numbers -- steps completed this way produce a
+ * physical document the citizen still needs to claim at the agency office
+ * (see the "To Do" section on the dashboard).
+ */
+export function markStepAutoApplied(
+  base: Journey,
+  stepNumber: number,
+  alsoComplete: number[] = [],
+): Journey {
+  return persist(
+    base,
+    [...existingCompletions(base), ...alsoComplete, stepNumber],
+    undefined,
+    undefined,
+    [...existingAutoApplied(base), stepNumber],
+  );
+}
+
+/**
+ * Mark auto-applied steps' resulting documents as claimed at the agency
+ * office, persisting the journey on first engagement.
+ */
+export function markStepsClaimed(base: Journey, stepNumbers: number[]): Journey {
+  return persist(
+    base,
+    existingCompletions(base),
+    undefined,
+    undefined,
+    undefined,
+    [...existingClaims(base), ...stepNumbers],
+  );
 }
 
 /**

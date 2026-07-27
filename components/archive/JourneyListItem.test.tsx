@@ -19,6 +19,8 @@ const base: Journey = {
   completed_step_numbers: [1, 2],
   paid_step_numbers: [],
   field_answers: {},
+  auto_applied_step_numbers: [],
+  claimed_step_numbers: [],
 };
 
 describe("JourneyListItem", () => {

@@ -4,6 +4,8 @@ import {
   completeStep,
   getAllJourneys,
   getStoredJourney,
+  markStepAutoApplied,
+  markStepsClaimed,
   markStepsDone,
   markStepsPaid,
   resetJourney,
@@ -107,6 +109,39 @@ describe("journey-store persistence", () => {
     const updated = completeStep(getStoredJourney(catalog.id)!, 1);
     expect(updated.paid_step_numbers).toEqual([1]);
     expect(updated.completed_step_numbers).toEqual([1]);
+  });
+
+  it("markStepAutoApplied completes the step and records it as auto-applied", () => {
+    const catalog = getJourneyByEventId("got-married")!;
+    const updated = markStepAutoApplied({ ...catalog }, 1);
+    expect(updated.completed_step_numbers).toEqual([1]);
+    expect(updated.auto_applied_step_numbers).toEqual([1]);
+    expect(updated.claimed_step_numbers).toEqual([]);
+  });
+
+  it("markStepAutoApplied folds in wallet-satisfied steps like completeStep", () => {
+    const catalog = getJourneyByEventId("first-job")!;
+    const updated = markStepAutoApplied({ ...catalog }, 1, [2, 4]);
+    expect(updated.completed_step_numbers.sort()).toEqual([1, 2, 4]);
+    expect(updated.auto_applied_step_numbers).toEqual([1]);
+  });
+
+  it("markStepsClaimed records claimed steps without affecting completion", () => {
+    const catalog = getJourneyByEventId("got-married")!;
+    markStepAutoApplied({ ...catalog }, 1);
+    const updated = markStepsClaimed(getStoredJourney(catalog.id)!, [1]);
+    expect(updated.claimed_step_numbers).toEqual([1]);
+    expect(updated.completed_step_numbers).toEqual([1]);
+    expect(updated.auto_applied_step_numbers).toEqual([1]);
+  });
+
+  it("markStepsClaimed merges with previously claimed step numbers", () => {
+    const catalog = getJourneyByEventId("got-married")!;
+    markStepAutoApplied({ ...catalog }, 1);
+    markStepAutoApplied(getStoredJourney(catalog.id)!, 2);
+    markStepsClaimed(getStoredJourney(catalog.id)!, [1]);
+    const updated = markStepsClaimed(getStoredJourney(catalog.id)!, [2]);
+    expect(updated.claimed_step_numbers.sort()).toEqual([1, 2]);
   });
 
   it("resetJourney removes only the matching event's stored journey", () => {

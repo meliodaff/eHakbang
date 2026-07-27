@@ -24,6 +24,8 @@ const journey: Journey = {
   completed_step_numbers: [1, 2, 3, 4, 5],
   paid_step_numbers: [],
   field_answers: {},
+  auto_applied_step_numbers: [],
+  claimed_step_numbers: [],
 };
 
 describe("CompletionCard", () => {

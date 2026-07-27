@@ -3,12 +3,12 @@ import { translate } from "./i18n";
 
 describe("translate", () => {
   it("returns the source string in English", () => {
-    expect(translate("Mark as Done", "en")).toBe("Mark as Done");
+    expect(translate("Auto Apply", "en")).toBe("Auto Apply");
     expect(translate("Got Married", "en")).toBe("Got Married");
   });
 
   it("returns the Filipino translation when available", () => {
-    expect(translate("Mark as Done", "fil")).toBe("Markahang Tapos");
+    expect(translate("Auto Apply", "fil")).toBe("I-auto Apply");
     expect(translate("Got Married", "fil")).toBe("Bagong Kasal");
   });
 

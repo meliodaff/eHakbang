@@ -15,6 +15,9 @@ export function JourneyView({
   walletStepNumbers = [],
   afterHeader,
   onComplete,
+  onAutoApplied,
+  onClaim,
+  onSubmitFields,
 }: {
   journey: Journey;
   completed: number[];
@@ -22,7 +25,12 @@ export function JourneyView({
   walletStepNumbers?: number[];
   /** Optional content rendered directly below the summary header. */
   afterHeader?: ReactNode;
+  /** Used only by the bulk AutoApplyBanner flow -- see StepCard's onAutoApplied for the per-step queue. */
   onComplete: (stepNumber: number) => void;
+  onAutoApplied: (stepNumber: number) => void;
+  onClaim: (stepNumber: number) => void;
+  /** Persists required_fields answers submitted from a step's Auto Apply flow. */
+  onSubmitFields: (answers: Record<number, Record<string, string>>) => void;
 }) {
   return (
     <main className="flex flex-1 flex-col">
@@ -42,7 +50,14 @@ export function JourneyView({
             step={step}
             completed={completed.includes(step.step_number)}
             walletFulfilled={walletStepNumbers.includes(step.step_number)}
-            onComplete={onComplete}
+            autoApplied={journey.auto_applied_step_numbers.includes(step.step_number)}
+            claimed={journey.claimed_step_numbers.includes(step.step_number)}
+            onAutoApplied={onAutoApplied}
+            onClaim={onClaim}
+            journeyId={journey.id}
+            eventId={journey.event_id}
+            fieldAnswers={journey.field_answers}
+            onSubmitFields={onSubmitFields}
           />
         ))}
       </div>

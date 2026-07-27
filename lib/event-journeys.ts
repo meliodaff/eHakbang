@@ -39,6 +39,8 @@ function build(
     completed_step_numbers: [],
     paid_step_numbers: [],
     field_answers: {},
+    auto_applied_step_numbers: [],
+    claimed_step_numbers: [],
   };
 }
 

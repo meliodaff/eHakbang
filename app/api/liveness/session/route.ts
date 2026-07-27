@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isLivenessMockEnabled } from "@/lib/server/liveness";
 
 /**
  * POST /api/liveness/session
@@ -14,16 +15,6 @@ import { NextRequest, NextResponse } from "next/server";
  *   { token: string; url: string }
  */
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.EGOV_LIVENESS_API_KEY;
-  const baseUrl = process.env.EGOV_LIVENESS_BASE_URL;
-
-  if (!apiKey || !baseUrl) {
-    return NextResponse.json(
-      { error: "Liveness API not configured" },
-      { status: 500 },
-    );
-  }
-
   let body: { callback_url?: string; delay?: number };
   try {
     body = await request.json();
@@ -38,6 +29,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "callback_url is required" },
       { status: 400 },
+    );
+  }
+
+  if (isLivenessMockEnabled()) {
+    // Dev-only: the real eGov capture page is skipped, but the app's own
+    // verification UI (start screen -> "connecting" -> callback) is unchanged.
+    // Never reachable in production (see isLivenessMockEnabled).
+    const token = `mock_${crypto.randomUUID()}`;
+    const mockUrl = new URL("/dev/liveness-mock", request.nextUrl.origin);
+    mockUrl.searchParams.set("callback_url", body.callback_url);
+    mockUrl.searchParams.set("delay", String(body.delay ?? 3000));
+    return NextResponse.json({ token, url: mockUrl.toString() }, { status: 201 });
+  }
+
+  const apiKey = process.env.EGOV_LIVENESS_API_KEY;
+  const baseUrl = process.env.EGOV_LIVENESS_BASE_URL;
+
+  if (!apiKey || !baseUrl) {
+    return NextResponse.json(
+      { error: "Liveness API not configured" },
+      { status: 500 },
     );
   }
 

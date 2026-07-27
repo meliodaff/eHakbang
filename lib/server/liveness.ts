@@ -21,6 +21,18 @@ function getConfig(): LivenessConfig {
   return { baseUrl, apiKey };
 }
 
+/**
+ * Dev-only escape hatch for when the (hackathon-provided) eGov liveness API
+ * is unavailable. Never active in production, so a real deployment always
+ * enforces the actual check even if this flag or the API config is missing.
+ * Set LIVENESS_MOCK=true in .env.local to force it on regardless of config.
+ */
+export function isLivenessMockEnabled(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  if (process.env.LIVENESS_MOCK === "true") return true;
+  return !process.env.EGOV_LIVENESS_BASE_URL || !process.env.EGOV_LIVENESS_API_KEY;
+}
+
 export interface LivenessResult {
   status: string;
   confidence_score: number;
@@ -33,6 +45,17 @@ export interface LivenessResult {
  * thresholds: status must be "SUCCEEDED" and confidence_score >= 95.0.
  */
 export async function getLivenessResult(token: string): Promise<LivenessResult> {
+  if (isLivenessMockEnabled()) {
+    console.warn(
+      `[liveness] LIVENESS_MOCK active - auto-approving token ${token} (dev only, never happens in production)`,
+    );
+    return {
+      status: "SUCCEEDED",
+      confidence_score: 99.9,
+      verified: true,
+    };
+  }
+
   const { baseUrl, apiKey } = getConfig();
 
   const response = await fetch(`${baseUrl}/v1/liveness/result/${encodeURIComponent(token)}`, {

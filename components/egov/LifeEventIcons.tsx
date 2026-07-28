@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 const cls = "h-7 w-7";
 const s = {
   stroke: "currentColor",
-  strokeWidth: 1.7,
+  strokeWidth: 1.5,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
   fill: "none",
@@ -26,11 +26,15 @@ function Married() {
 function Baby() {
   return (
     <svg viewBox="0 0 24 24" className={cls} fill="none" aria-hidden>
-      <circle cx="12" cy="8" r="4.2" {...s} />
-      <circle cx="10.4" cy="8" r="0.6" fill="currentColor" />
-      <circle cx="13.6" cy="8" r="0.6" fill="currentColor" />
-      <path d="M10.6 10.2c.9.7 1.9.7 2.8 0" {...s} />
-      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" {...s} />
+      {/* Face */}
+      <circle cx="12" cy="13" r="6" {...s} />
+      {/* Eyes */}
+      <circle cx="9.8" cy="12" r="0.7" fill="currentColor" />
+      <circle cx="14.2" cy="12" r="0.7" fill="currentColor" />
+      {/* Smile */}
+      <path d="M10 15a2.2 2.2 0 0 0 4 0" {...s} />
+      {/* Curl */}
+      <path d="M12 7c0-2.5 2-3 2-1.5 0 1-1.5 1-2 .5" {...s} />
     </svg>
   );
 }
@@ -69,9 +73,10 @@ function Business() {
 function Senior() {
   return (
     <svg viewBox="0 0 24 24" className={cls} fill="none" aria-hidden>
-      <circle cx="10" cy="4.8" r="2.1" {...s} />
-      <path d="M10 7.2v6M10 10.5 7 12.5M10 13l-2.5 8M10 13l2.5 8" {...s} />
-      <path d="M15.5 8v13" {...s} />
+      <circle cx="12" cy="6" r="2.2" {...s} />
+      <path d="M12 8.2v5.8" {...s} />
+      <path d="M6 11.5c2-1.5 10-1.5 12 0" {...s} />
+      <path d="M8.5 20.5 12 14l3.5 6.5" {...s} />
     </svg>
   );
 }
@@ -79,9 +84,15 @@ function Senior() {
 function Pwd() {
   return (
     <svg viewBox="0 0 24 24" className={cls} fill="none" aria-hidden>
-      <circle cx="10.5" cy="4.6" r="1.9" {...s} />
-      <path d="M10.5 7v5.5h4.5l2.2 4.2" {...s} />
-      <circle cx="12" cy="16.5" r="4.6" {...s} />
+      {/* Head */}
+      <circle cx="16" cy="4" r="2" {...s} />
+      {/* Legs */}
+      <path d="m18 19 1-7-6 1" {...s} />
+      {/* Torso & Arm */}
+      <path d="m5 8 3-3 5.5 3-2.36 3.5" {...s} />
+      {/* Wheel (split paths for monoline design) */}
+      <path d="M4.24 14.5a5 5 0 0 0 6.88 6" {...s} />
+      <path d="M13.76 17.5a5 5 0 0 0-6.88-6" {...s} />
     </svg>
   );
 }

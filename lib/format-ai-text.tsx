@@ -9,7 +9,8 @@ import type { ReactNode } from "react";
 const LINK_PATTERN =
   /\(?\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)\)?|(https?:\/\/[^\s)]+)/g;
 
-export function linkifyText(text: string): ReactNode[] {
+export function linkifyText(text: string | null | undefined): ReactNode[] {
+  if (typeof text !== "string") return [];
   const nodes: ReactNode[] = [];
   let lastIndex = 0;
   let key = 0;
@@ -39,6 +40,7 @@ export function linkifyText(text: string): ReactNode[] {
 }
 
 /** Removes inline markdown citation links entirely, e.g. for fields like estimated_time. */
-export function stripInlineLinks(text: string): string {
+export function stripInlineLinks(text: string | null | undefined): string {
+  if (typeof text !== "string") return "";
   return text.replace(LINK_PATTERN, "").replace(/\s{2,}/g, " ").trim();
 }

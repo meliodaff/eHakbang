@@ -46,12 +46,12 @@ export function TopAppBar({
 
       <div className="flex items-center gap-1.5">
         <Image
-          src="/bagong-pilipinas.jpg"
+          src="/Bagong-Pilipinas-Logo.webp"
           alt="Bagong Pilipinas"
-          width={112}
-          height={92}
+          width={32}
+          height={32}
           priority
-          className="h-8 w-auto shrink-0"
+          className="h-8 w-8 rounded-full object-cover shrink-0"
         />
         <LanguageToggle />
         <Link

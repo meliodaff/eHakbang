@@ -327,31 +327,32 @@ export async function askAboutStep(
   return res.json();
 }
 
+export interface NotifyStepUpdateInput {
+  eventId: string;
+  stepTitle: string;
+  agencyName: string;
+  /** "submitted" once the application reaches the agency; "completed" once it's done. */
+  status: "submitted" | "completed";
+}
+
 /**
- * Notify the citizen (via SMS, see /api/notifications/auto-apply) that their
- * auto-apply submission finished successfully. Best-effort -- a notification
- * failure must never surface as an error to the auto-apply flow itself.
+ * Notify the citizen (via SMS, see /api/notifications/step-update) that one
+ * of their journey's requirements was processed -- fired per requirement, not
+ * just once when the whole journey finishes, so every submission and
+ * completion gets its own message. Best-effort -- a notification failure
+ * must never surface as an error to the journey flow itself.
  */
-export async function notifyAutoApplySuccess(eventId: string): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log("[DEBUG][notifyAutoApplySuccess] POSTing to /api/notifications/auto-apply", { eventId });
+export async function notifyStepUpdate(input: NotifyStepUpdateInput): Promise<void> {
   try {
-    const res = await fetch("/api/notifications/auto-apply", {
+    const res = await fetch("/api/notifications/step-update", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId }),
+      body: JSON.stringify(input),
     });
-    // NOTE: the route always responds with HTTP 200 even when the SMS send
-    // failed (it encodes success/failure in the JSON body's `sent` field
-    // instead), so `res.ok` alone can't tell us whether it actually worked --
-    // read the body every time while debugging.
-    const bodyText = await res.text();
-    // eslint-disable-next-line no-console
-    console.log("[DEBUG][notifyAutoApplySuccess] response", { status: res.status, body: bodyText });
     if (!res.ok) {
-      console.error("[notifyAutoApplySuccess] request failed:", bodyText);
+      console.error("[notifyStepUpdate] request failed:", await res.text());
     }
   } catch (err) {
-    console.error("[notifyAutoApplySuccess] request failed:", err);
+    console.error("[notifyStepUpdate] request failed:", err);
   }
 }

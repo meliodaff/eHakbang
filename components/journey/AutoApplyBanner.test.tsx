@@ -3,15 +3,15 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AutoApplyBanner } from "./AutoApplyBanner";
 import type { Journey, JourneyStep } from "@/lib/types";
 
-const { submitAutoApply, createFeePayment, notifyAutoApplySuccess } = vi.hoisted(() => ({
+const { submitAutoApply, createFeePayment, notifyStepUpdate } = vi.hoisted(() => ({
   submitAutoApply: vi.fn(),
   createFeePayment: vi.fn(),
-  notifyAutoApplySuccess: vi.fn(),
+  notifyStepUpdate: vi.fn(),
 }));
 vi.mock("@/lib/api-client", () => ({
   submitAutoApply,
   createFeePayment,
-  notifyAutoApplySuccess,
+  notifyStepUpdate,
 }));
 
 function step(overrides: Partial<JourneyStep>): JourneyStep {
@@ -65,7 +65,7 @@ describe("AutoApplyBanner", () => {
     onComplete.mockReset();
     submitAutoApply.mockReset().mockResolvedValue({ status: "pending" });
     createFeePayment.mockReset();
-    notifyAutoApplySuccess.mockReset();
+    notifyStepUpdate.mockReset();
     window.sessionStorage.clear();
     window.localStorage.clear();
   });
@@ -84,7 +84,14 @@ describe("AutoApplyBanner", () => {
 
     expect(screen.queryByText(/pay government fees/i)).not.toBeInTheDocument();
     await waitFor(() => expect(submitAutoApply).toHaveBeenCalled());
-    await waitFor(() => expect(notifyAutoApplySuccess).toHaveBeenCalledWith("got-married"));
+    // Each submitted step fires its own SMS via the store, not one batch SMS.
+    await waitFor(() => expect(notifyStepUpdate).toHaveBeenCalledTimes(2));
+    expect(notifyStepUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ eventId: "got-married", agencyName: "PSA", status: "submitted" }),
+    );
+    expect(notifyStepUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ eventId: "got-married", agencyName: "PhilSys", status: "submitted" }),
+    );
     // Approval now lives on the /track page, so the banner never completes
     // steps itself -- it links there instead.
     expect(onComplete).not.toHaveBeenCalled();

@@ -3,14 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Journey, JourneyStep } from "@/lib/types";
-import {
-  createFeePayment,
-  notifyAutoApplySuccess,
-  submitAutoApply,
-} from "@/lib/api-client";
+import { createFeePayment, submitAutoApply } from "@/lib/api-client";
 import { isCivilStatusEvent, getCivilStatusTransition } from "@/lib/civil-status-events";
 import { getFeeBill, hasPayableFees, formatCurrency } from "@/lib/journey-fees";
 import { getMissingRequiredFields } from "@/lib/journey-fields";
+import { stepSupportsAutoApply } from "@/lib/journey-auto-apply";
 import { setFieldAnswers, markStepsSubmitted } from "@/lib/journey-store";
 import { StepFieldsForm } from "./StepFieldsForm";
 import { cn } from "@/lib/cn";
@@ -70,8 +67,11 @@ export function AutoApplyBanner({
   const isCivil = isCivilStatusEvent(journey.event_id);
   const transition = getCivilStatusTransition(journey.event_id);
 
+  // Visit-only steps (e.g. "Go to the barangay hall") have nothing to
+  // auto-apply for -- the citizen completes those individually from their
+  // own card instead.
   const pendingSteps = journey.steps.filter(
-    (s) => !completed.includes(s.step_number),
+    (s) => !completed.includes(s.step_number) && stepSupportsAutoApply(s),
   );
   const feeBill = getFeeBill(pendingSteps, journey.paid_step_numbers ?? []);
   const billable = hasPayableFees(feeBill);
@@ -99,9 +99,6 @@ export function AutoApplyBanner({
     }
     setCurrentStepNumber(null);
     setStage("done");
-    // eslint-disable-next-line no-console
-    console.log("[DEBUG][AutoApplyBanner] applying loop finished, triggering SMS notify for", journey.event_id);
-    void notifyAutoApplySuccess(journey.event_id ?? "");
   }
 
   /** Proceeds exactly as a confirm with no missing fields always has: pay if billable, else apply. */

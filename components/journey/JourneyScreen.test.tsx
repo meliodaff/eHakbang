@@ -9,15 +9,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
 }));
 
-const { submitAutoApply, fetchAutoApplyStatus, submitEnrollment } = vi.hoisted(() => ({
-  submitAutoApply: vi.fn(),
-  fetchAutoApplyStatus: vi.fn(),
-  submitEnrollment: vi.fn(),
-}));
+const { submitAutoApply, fetchAutoApplyStatus, submitEnrollment, notifyStepUpdate } =
+  vi.hoisted(() => ({
+    submitAutoApply: vi.fn(),
+    fetchAutoApplyStatus: vi.fn(),
+    submitEnrollment: vi.fn(),
+    notifyStepUpdate: vi.fn(),
+  }));
 vi.mock("@/lib/api-client", () => ({
   submitAutoApply,
   fetchAutoApplyStatus,
   submitEnrollment,
+  notifyStepUpdate,
 }));
 
 let queued: Set<number>;
@@ -113,6 +116,7 @@ describe("JourneyScreen", () => {
     submitAutoApply.mockReset();
     fetchAutoApplyStatus.mockReset();
     submitEnrollment.mockReset();
+    notifyStepUpdate.mockReset();
     submitEnrollment.mockResolvedValue({
       stepNumber: 0,
       requiredId: "philhealth",

@@ -20,6 +20,7 @@ import {
   checkEligibility,
 } from "@/lib/journey-eligibility";
 import { resolveOfficialService, resolveOfficialUrl } from "@/lib/egov-catalog";
+import { stepSupportsAutoApply } from "@/lib/journey-auto-apply";
 import { StepTypeBadge } from "./StepTypeBadge";
 import { DisclaimerBox } from "./DisclaimerBox";
 import { AskAboutStep } from "./AskAboutStep";
@@ -121,6 +122,9 @@ export function StepCard({
     : t("Submitted — awaiting agency review");
   // Resolved official destination for the "Go to Official Service" CTA.
   const official = resolveOfficialService(step);
+  // Some steps are just a physical visit with nothing to file (e.g. "Go to
+  // the barangay hall") -- Auto Apply has no application to submit for those.
+  const autoApplySupported = stepSupportsAutoApply(step);
   const [queueState, setQueueState] = useState<QueueUiState>({ kind: "checking" });
   const [enrollState, setEnrollState] = useState<EnrollUiState>({ kind: "idle" });
   const [simulating, setSimulating] = useState(false);
@@ -301,6 +305,12 @@ export function StepCard({
   // recorded it; add it to the wallet (via onEnrolled) to unblock the claim.
   function handleAlreadyHave() {
     if (requiredId) onEnrolled?.(requiredId);
+  }
+
+  // A visit-only step (e.g. "Go to the barangay hall") has nothing to
+  // auto-apply for -- completing it just means the citizen went there.
+  function handleMarkVisited() {
+    onSimulateApproval?.(step.step_number);
   }
 
   // Run the indicative eligibility pre-check. On "eligible" the render falls
@@ -626,6 +636,22 @@ export function StepCard({
               className="min-h-11 rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
             >
               {t("Try again")}
+            </button>
+          </div>
+        ) : !autoApplySupported ? (
+          <div className="flex flex-col gap-2 rounded-egov bg-background p-3">
+            <p className="flex items-center gap-1.5 text-sm text-muted">
+              <span aria-hidden>📍</span>
+              {t(
+                "This step just needs an in-person visit — there's nothing to submit online.",
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={handleMarkVisited}
+              className="min-h-11 rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+            >
+              {t("Mark as Done")}
             </button>
           </div>
         ) : (

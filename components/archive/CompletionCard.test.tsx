@@ -45,10 +45,10 @@ describe("CompletionCard", () => {
     expect(push).toHaveBeenCalledWith("/journeys");
   });
 
-  it("starts a new journey from home", () => {
+  it("starts a new journey from the eHakbang dashboard", () => {
     render(<CompletionCard journey={journey} />);
     fireEvent.click(screen.getByRole("button", { name: /start a new journey/i }));
-    expect(push).toHaveBeenCalledWith("/");
+    expect(push).toHaveBeenCalledWith("/ehakbang");
   });
 
   it("in read-only mode, shows only Back to Home with no archive/start-new prompts", () => {

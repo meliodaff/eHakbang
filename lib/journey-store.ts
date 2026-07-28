@@ -8,6 +8,7 @@ import {
   fetchJourneysFromSupabase,
   syncJourneyToSupabase,
 } from "./journey-sync";
+import { notifyStepUpdate } from "./api-client";
 
 /**
  * Client-side journey persistence (PRD FR-08/09). localStorage is the
@@ -69,6 +70,39 @@ export function getStoredJourney(id: string): Journey | undefined {
 }
 
 /**
+ * Fires a best-effort SMS for every step that newly entered "submitted" or
+ * "completed" state in this persist() call -- so citizens are notified per
+ * requirement processed, not just once when the whole journey finishes.
+ * Diffs against `source` (the record as it was before this write) so a step
+ * already submitted/completed on an earlier persist() doesn't re-notify.
+ */
+function notifyStepChanges(source: Journey, record: Journey): void {
+  const eventId = record.event_id;
+  if (!eventId) return;
+
+  const wasSubmitted = new Set(source.submitted_step_numbers ?? []);
+  const wasCompleted = new Set(source.completed_step_numbers ?? []);
+  const newlySubmitted = (record.submitted_step_numbers ?? []).filter(
+    (n) => !wasSubmitted.has(n),
+  );
+  const newlyCompleted = record.completed_step_numbers.filter((n) => !wasCompleted.has(n));
+
+  const notify = (stepNumber: number, status: "submitted" | "completed") => {
+    const step = record.steps.find((s) => s.step_number === stepNumber);
+    if (!step) return;
+    void notifyStepUpdate({
+      eventId,
+      stepTitle: step.step_title,
+      agencyName: step.agency_name,
+      status,
+    });
+  };
+
+  for (const stepNumber of newlySubmitted) notify(stepNumber, "submitted");
+  for (const stepNumber of newlyCompleted) notify(stepNumber, "completed");
+}
+
+/**
  * Persist a journey with the given set of completed step numbers, creating the
  * record on first engagement. Completion status/date are derived from whether
  * every step is done.
@@ -107,6 +141,8 @@ function persist(
     record.status = "completed";
     record.completed_at = new Date().toISOString();
   }
+
+  notifyStepChanges(source, record);
 
   if (idx < 0) list.unshift(record);
   else list[idx] = record;

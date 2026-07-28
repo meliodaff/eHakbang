@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Journey, JourneyStep } from "@/lib/types";
 import { useJourneys, markStepsSubmitted } from "@/lib/journey-store";
 import { submitAutoApply } from "@/lib/api-client";
+import { stepSupportsAutoApply } from "@/lib/journey-auto-apply";
 import { useT } from "@/lib/i18n";
 
 /**
@@ -28,7 +29,8 @@ export function ApplyAllButton({ journeyId }: { journeyId?: string }) {
       const pending = journey.steps.filter(
         (s) =>
           !submitted.includes(s.step_number) &&
-          !journey.completed_step_numbers.includes(s.step_number),
+          !journey.completed_step_numbers.includes(s.step_number) &&
+          stepSupportsAutoApply(s),
       );
       return { journey, pending };
     })

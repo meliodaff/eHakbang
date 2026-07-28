@@ -126,7 +126,7 @@ export function CompletionCard({
             </button>
             <button
               type="button"
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/ehakbang")}
               className="min-h-12 rounded-egov border border-egov-blue px-5 py-3 font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
             >
               {t("Start a New Journey")}

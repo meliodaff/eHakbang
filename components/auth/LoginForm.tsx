@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
+import type { FocusEvent } from "react";
 import { signInAction, type FormState } from "@/app/actions/auth";
 import { useT } from "@/lib/i18n";
 import { TurnstileWidget } from "./TurnstileWidget";
@@ -11,12 +12,30 @@ import { EgovSignInButton } from "./EgovSignInButton";
 const inputCls =
   "rounded-egov border border-border bg-background px-3 py-2.5 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue";
 
+/** Chrome (and others) ignore autoComplete="off" on sign-in fields and autofill saved credentials anyway -- a field can't be autofilled while readOnly, so drop it the moment the citizen actually focuses in. */
+function dropReadOnlyOnFocus(e: FocusEvent<HTMLInputElement>) {
+  e.currentTarget.removeAttribute("readonly");
+}
+
 export function LoginForm({ confirmNotice }: { confirmNotice?: boolean }) {
   const t = useT();
   const [state, action, pending] = useActionState<FormState, FormData>(signInAction, undefined);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    // Browsers can restore this page from bfcache on back/forward
+    // navigation without re-running component logic, which would otherwise
+    // leave a previously typed email/password sitting in these (uncontrolled)
+    // fields -- explicitly clear them whenever that happens.
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) formRef.current?.reset();
+    }
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
   return (
-    <form action={action} className="flex flex-col gap-4" autoComplete="off">
+    <form ref={formRef} action={action} className="flex flex-col gap-4" autoComplete="off">
       {confirmNotice && (
         <p className="rounded-egov bg-egov-blue-050 px-3 py-2.5 text-sm text-egov-blue-dark">
           {t("Account created. Check your email to confirm your account, then sign in.")}
@@ -27,7 +46,16 @@ export function LoginForm({ confirmNotice }: { confirmNotice?: boolean }) {
         <label htmlFor="email" className="text-sm font-semibold text-foreground">
           {t("Email")}
         </label>
-        <input id="email" name="email" type="email" required autoComplete="off" className={inputCls} />
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoComplete="off"
+          readOnly
+          onFocus={dropReadOnlyOnFocus}
+          className={inputCls}
+        />
       </div>
 
       <div className="flex flex-col gap-1">
@@ -40,6 +68,8 @@ export function LoginForm({ confirmNotice }: { confirmNotice?: boolean }) {
           type="password"
           required
           autoComplete="off"
+          readOnly
+          onFocus={dropReadOnlyOnFocus}
           className={inputCls}
         />
       </div>

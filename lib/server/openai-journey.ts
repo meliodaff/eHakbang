@@ -14,6 +14,19 @@ export interface GeneratedJourney {
   summary: string;
   /** Short (<=6 word) plain-language title for the life event, e.g. "Representing PH at a US Tournament". */
   title: string;
+  /**
+   * True when this life event is the kind a citizen would realistically need
+   * to prove with a document before agencies should act on it (e.g. a PSA
+   * certificate, court decree, medical certificate). Drives whether a
+   * custom (free-text) journey's intake gate asks for evidence before face
+   * verification, or goes straight to face verification -- see
+   * `app/journey/start/page.tsx`.
+   */
+  requires_evidence: boolean;
+  /** Short "Attach proof of ..." heading for the evidence step. Null when requires_evidence is false. */
+  evidence_title: string | null;
+  /** One-sentence description of what to upload. Null when requires_evidence is false. */
+  evidence_description: string | null;
   steps: Array<
     Omit<JourneyStep, "step_number" | "fulfills_id" | "prerequisite" | "egov_url">
   >;
@@ -68,6 +81,9 @@ const JOURNEY_SCHEMA = {
   properties: {
     summary: { type: "string" },
     title: { type: "string" },
+    requires_evidence: { type: "boolean" },
+    evidence_title: { type: ["string", "null"] },
+    evidence_description: { type: ["string", "null"] },
     steps: {
       type: "array",
       items: {
@@ -104,7 +120,14 @@ const JOURNEY_SCHEMA = {
       },
     },
   },
-  required: ["summary", "title", "steps"],
+  required: [
+    "summary",
+    "title",
+    "requires_evidence",
+    "evidence_title",
+    "evidence_description",
+    "steps",
+  ],
   additionalProperties: false,
 } as const;
 
@@ -143,20 +166,44 @@ Rules:
   like a headline, e.g. "Representing PH at a US Tournament" or "Starting a New Business" -- not a
   restatement of any single step.
 - Order steps in the sequence a citizen should realistically complete them.
+- The user message lists the government IDs/memberships the citizen currently holds (or "none").
+  A record_update step can mean one of two different things -- treat them differently:
+  (a) it UPDATES an existing record at an agency (e.g. updating civil status, adding/removing a
+      dependent, changing an address on file, updating beneficiaries, converting a membership
+      type) -- only include this kind of step when the citizen already holds that specific
+      agency's ID/membership, since there is no existing record to update otherwise; or
+  (b) it OBTAINS/REGISTERS an ID or membership for the first time (e.g. applying for an SSS
+      number, getting a TIN) -- always include this kind when relevant, regardless of what the
+      citizen currently holds, since that is precisely how they would come to hold it.
+  When in doubt about which kind a step is, prefer treating it as (b) so a citizen is never
+  silently denied a step they actually need.
+- Decide whether this life event is the kind a citizen would realistically need to prove with a
+  document before agencies should act on it -- e.g. a PSA certificate, court decree, medical
+  certificate, or official letter -- as opposed to something with no realistic documentary proof.
+  Set "requires_evidence" accordingly. When true, set "evidence_title" (a short "Attach proof of
+  ..." heading naming the event, e.g. "Attach proof of adoption") and "evidence_description" (one
+  sentence naming the kind of document a citizen would plausibly have, e.g. "Upload your adoption
+  certificate or the agency's approval letter."). When false, set both to null. Do not invent a
+  specific document type you are not reasonably confident exists for this event.
 - Output must satisfy the provided JSON schema exactly.`;
 
-function buildUserPrompt(lifeEvent: string, language: Language): string {
+function buildUserPrompt(lifeEvent: string, language: Language, heldIds: IdType[]): string {
   const languageInstruction =
     language === "fil"
       ? "Respond in Filipino (Tagalog)."
       : "Respond in English.";
-  return `Life event: ${lifeEvent}\n${languageInstruction}`;
+  const heldIdsLine = `Citizen's currently held government IDs/memberships: ${
+    heldIds.length > 0 ? heldIds.join(", ") : "none"
+  }.`;
+  return `Life event: ${lifeEvent}\n${heldIdsLine}\n${languageInstruction}`;
 }
 
 export async function generateJourneyWithOpenAI(input: {
   eventId: string;
   lifeEvent: string;
   language: Language;
+  /** Government IDs/memberships the citizen has already saved in their ID Wallet (see lib/server/id-wallet.ts). */
+  heldIds: IdType[];
 }): Promise<GeneratedJourney> {
   const model = process.env.OPENAI_JOURNEY_MODEL ?? "gpt-4.1";
   const response = await getClient().responses.create({
@@ -164,7 +211,10 @@ export async function generateJourneyWithOpenAI(input: {
     tools: [{ type: "web_search" }],
     input: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildUserPrompt(input.lifeEvent, input.language) },
+      {
+        role: "user",
+        content: buildUserPrompt(input.lifeEvent, input.language, input.heldIds),
+      },
     ],
     text: {
       format: {
@@ -179,12 +229,18 @@ export async function generateJourneyWithOpenAI(input: {
   const parsed = JSON.parse(response.output_text) as {
     summary: string;
     title: string;
+    requires_evidence: boolean;
+    evidence_title: string | null;
+    evidence_description: string | null;
     steps: Array<Omit<JourneyStep, "step_number" | "fulfills_id" | "egov_url">>;
   };
 
   return {
     summary: parsed.summary,
     title: parsed.title,
+    requires_evidence: parsed.requires_evidence,
+    evidence_title: parsed.evidence_title,
+    evidence_description: parsed.evidence_description,
     steps: parsed.steps.map((step) => ({
       ...step,
       fulfills_id: inferFulfillsId(step),

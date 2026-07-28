@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { IdType, JourneyStep } from "./types";
+import { fetchIdWalletFromSupabase } from "./id-wallet-sync";
 
 /**
  * ID Wallet — a local, on-device record of the government IDs the citizen
@@ -202,6 +203,16 @@ export function useIdWallet(): {
     update();
     window.addEventListener(CHANGE_EVENT, update);
     window.addEventListener("storage", update);
+
+    // Fresh device/reinstall (empty local wallet): restore the citizen's
+    // last-saved selection from Supabase, if any. Never overwrites an
+    // existing local selection -- local edits (saved or not) always win.
+    if (read().length === 0) {
+      void fetchIdWalletFromSupabase().then((saved) => {
+        if (saved && saved.length > 0 && read().length === 0) write(saved);
+      });
+    }
+
     return () => {
       window.removeEventListener(CHANGE_EVENT, update);
       window.removeEventListener("storage", update);

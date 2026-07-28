@@ -1,8 +1,7 @@
 import "server-only";
-import type { Journey, JourneyStep, Language } from "@/lib/types";
+import type { IdType, Journey, JourneyStep, Language } from "@/lib/types";
 import { getLifeEventById } from "@/lib/events";
 import { getJourneyByEventId } from "@/lib/event-journeys";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   generateJourneyWithOpenAI,
   inferFulfillsId,
@@ -13,47 +12,41 @@ import { customEventId } from "@/lib/custom-event";
 import { inferEligibility } from "@/lib/journey-eligibility";
 
 /**
- * Cache-or-regenerate layer for AI-generated journey requirements. Staleness
- * is checked lazily on read (no cron): a cached row older than 24h triggers a
- * regeneration; anything else (missing config, OpenAI/Supabase errors) falls
- * back to the hand-written seed in `lib/event-journeys.ts` (preset events) or
- * a minimal empty journey (custom/free-text events, which have no seed) so
- * the app keeps working without any keys configured.
+ * Always-fresh AI generation for journey requirements -- every call hits
+ * OpenAI directly, no Supabase cache. Requirements are personalized per
+ * citizen via their currently held IDs (see `lib/server/id-wallet.ts`), so a
+ * cross-user cache keyed only by event+language could never be reused
+ * correctly anyway: two citizens with different wallets need different
+ * steps for the same event.
+ *
+ * Falls back to the hand-written seed in `lib/event-journeys.ts` (preset
+ * events) or a minimal empty journey (custom/free-text events, which have no
+ * seed) when generation fails (missing OPENAI_API_KEY, OpenAI error), so the
+ * app keeps working without any keys configured.
  */
-
-const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 
 export interface JourneyResult {
   journey: Journey;
+  /** True when this came from a fresh AI generation; false when it fell back to the seed/empty journey. */
   regenerated: boolean;
-  source: "cache" | "ai" | "seed";
+  source: "ai" | "seed";
+  /**
+   * Whether this life event needs supporting evidence before proceeding
+   * (see `app/journey/start/page.tsx`'s custom-event intake gate). Only
+   * meaningful when `source` is "ai" -- undefined on a seed/empty fallback,
+   * since there's nothing confident to gate.
+   */
+  requiresEvidence?: boolean;
+  evidenceTitle?: string | null;
+  evidenceDescription?: string | null;
 }
 
-interface JourneyRequirementsRow {
-  event_id: string;
-  language: string;
-  emoji: string;
-  life_event: string;
-  summary: string;
-  steps: JourneyStep[];
-  total_steps: number;
-  record_updates: number;
-  benefit_claims: number;
-  updated_at: string;
-}
-
-function journeyId(eventId: string): string {
+/** Stable journey id for an event, shared with `lib/server/stored-journeys.ts`'s lookup key. */
+export function journeyId(eventId: string): string {
   return `ehakbang:journey:event:${eventId}`;
 }
 
-/**
- * Recompute derived, relational step fields at read time so cached rows (and
- * freshly generated ones) always reflect the latest logic — without waiting
- * for the 24h staleness window or wiping the cache. `fulfills_id` is
- * recomputed unconditionally (older cached rows wrongly tagged benefit claims,
- * which made the ID wallet auto-complete them); `prerequisite`/`eligibility`
- * are kept if already present, otherwise inferred.
- */
+/** Fills in derived, relational step fields the model doesn't reliably set itself. */
 function decorateSteps(steps: JourneyStep[]): JourneyStep[] {
   return steps.map((step) => ({
     ...step,
@@ -61,29 +54,6 @@ function decorateSteps(steps: JourneyStep[]): JourneyStep[] {
     prerequisite: step.prerequisite ?? inferPrerequisite(step),
     eligibility: step.eligibility ?? inferEligibility(step),
   }));
-}
-
-function rowToJourney(row: JourneyRequirementsRow, language: Language): Journey {
-  return {
-    id: journeyId(row.event_id),
-    event_id: row.event_id,
-    emoji: row.emoji,
-    life_event: row.life_event,
-    summary: row.summary,
-    total_steps: row.total_steps,
-    record_updates: row.record_updates,
-    benefit_claims: row.benefit_claims,
-    steps: decorateSteps(row.steps),
-    status: "active",
-    language,
-    created_at: row.updated_at,
-    completed_at: null,
-    completed_step_numbers: [],
-    paid_step_numbers: [],
-    field_answers: {},
-    auto_applied_step_numbers: [],
-    claimed_step_numbers: [],
-  };
 }
 
 function seedResult(eventId: string): JourneyResult {
@@ -126,68 +96,58 @@ function emptyResult(
   };
 }
 
-interface RegenerateParams {
+interface GenerateParams {
   eventId: string;
   lifeEvent: string;
   emoji: string;
-  /** Derives the stored `life_event` label from the AI result (ignored for cache hits/failures, which already have their own label). */
+  /** Derives the journey's `life_event` label from the AI result. */
   lifeEventLabel: (generated: GeneratedJourney) => string;
   language: Language;
+  heldIds: IdType[];
   onFailure: () => JourneyResult;
 }
 
-/** Shared cache-check -> AI-generate -> Supabase-upsert flow for any event id (preset or custom). */
-async function getOrRegenerate(params: RegenerateParams): Promise<JourneyResult> {
-  const { eventId, lifeEvent, emoji, lifeEventLabel, language, onFailure } = params;
+/** Shared AI-generate flow for any event id (preset or custom). */
+async function generateFresh(params: GenerateParams): Promise<JourneyResult> {
+  const { eventId, lifeEvent, emoji, lifeEventLabel, language, heldIds, onFailure } = params;
   try {
-    const supabase = getSupabaseServerClient();
-    const { data: existing } = await supabase
-      .from("journey_requirements")
-      .select(
-        "event_id, language, emoji, life_event, summary, steps, total_steps, record_updates, benefit_claims, updated_at",
-      )
-      .eq("event_id", eventId)
-      .eq("language", language)
-      .maybeSingle<JourneyRequirementsRow>();
+    const generated = await generateJourneyWithOpenAI({ eventId, lifeEvent, language, heldIds });
+    const steps: JourneyStep[] = decorateSteps(
+      generated.steps.map((step, i) => ({ ...step, step_number: i + 1 })),
+    );
 
-    if (existing) {
-      const age = Date.now() - new Date(existing.updated_at).getTime();
-      if (age < STALE_AFTER_MS) {
-        return { journey: rowToJourney(existing, language), regenerated: false, source: "cache" };
-      }
-    }
-
-    const generated = await generateJourneyWithOpenAI({ eventId, lifeEvent, language });
-    const steps: JourneyStep[] = generated.steps.map((step, i) => ({
-      ...step,
-      step_number: i + 1,
-    }));
-    const row = {
+    const journey: Journey = {
+      id: journeyId(eventId),
       event_id: eventId,
-      language,
       emoji,
       life_event: lifeEventLabel(generated),
       summary: generated.summary,
-      steps,
       total_steps: steps.length,
       record_updates: steps.filter((s) => s.step_type === "record_update").length,
       benefit_claims: steps.filter((s) => s.step_type === "benefit_claim").length,
-      model: generated.model,
-      updated_at: new Date().toISOString(),
+      steps,
+      status: "active",
+      language,
+      created_at: new Date().toISOString(),
+      completed_at: null,
+      completed_step_numbers: [],
+      paid_step_numbers: [],
+      field_answers: {},
+      auto_applied_step_numbers: [],
+      claimed_step_numbers: [],
     };
-    const { data: upserted, error } = await supabase
-      .from("journey_requirements")
-      .upsert(row, { onConflict: "event_id,language" })
-      .select(
-        "event_id, language, emoji, life_event, summary, steps, total_steps, record_updates, benefit_claims, updated_at",
-      )
-      .single<JourneyRequirementsRow>();
-    if (error || !upserted) throw error ?? new Error("Upsert returned no row");
 
-    return { journey: rowToJourney(upserted, language), regenerated: true, source: "ai" };
+    return {
+      journey,
+      regenerated: true,
+      source: "ai",
+      requiresEvidence: generated.requires_evidence,
+      evidenceTitle: generated.evidence_title,
+      evidenceDescription: generated.evidence_description,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : JSON.stringify(err);
-    console.error(`getOrRegenerate(${eventId}) failed, using fallback: ${message}`);
+    console.error(`generateFresh(${eventId}) failed, using fallback: ${message}`);
     return onFailure();
   }
 }
@@ -195,17 +155,20 @@ async function getOrRegenerate(params: RegenerateParams): Promise<JourneyResult>
 export async function getOrRegenerateJourney(input: {
   eventId: string;
   language?: Language;
+  /** Citizen's currently held IDs (see `lib/server/id-wallet.ts`), so generation can personalize which record-update steps apply. Defaults to none. */
+  heldIds?: IdType[];
 }): Promise<JourneyResult> {
   const language = input.language ?? "en";
   const event = getLifeEventById(input.eventId);
   if (!event) throw new Error(`Unknown life event: ${input.eventId}`);
 
-  return getOrRegenerate({
+  return generateFresh({
     eventId: input.eventId,
     lifeEvent: event.description,
     emoji: event.emoji,
     lifeEventLabel: () => event.sublabel,
     language,
+    heldIds: input.heldIds ?? [],
     onFailure: () => seedResult(input.eventId),
   });
 }
@@ -214,21 +177,24 @@ const CUSTOM_EMOJI = "📋";
 const MAX_LABEL_LENGTH = 80;
 
 /**
- * Cache-or-regenerate for a free-text life event that didn't match any
- * preset (see `lib/server/classify-life-event.ts`). The cache key is derived
- * from `slug` when provided -- a canonical, wording-independent summary of
- * the situation from the classify step -- so two different phrasings of the
- * same context ("I got accepted as a PH rep for a tournament in the US" vs.
- * "I'll represent the Philippines in a US tournament") reuse the same 24h
- * cache row instead of triggering separate AI generations. Falls back to
- * hashing the raw text when no slug is available (e.g. a direct `?q=` link).
- * The journey's displayed title comes from the AI's own short summary of the
- * life event (`generated.title`) rather than the raw typed sentence.
+ * AI generation for a free-text life event that didn't match any preset
+ * (see `lib/server/classify-life-event.ts`). The event id is still derived
+ * from `slug` when provided (a canonical, wording-independent summary of the
+ * situation from the classify step) so two different phrasings of the same
+ * context reuse the same stable journey id client-side -- that id is what
+ * lets `lib/journey-store.ts` recognize "this is the journey I already
+ * started" and preserve local progress instead of it looking brand new on
+ * every visit, even though the content itself is regenerated fresh each
+ * time. Falls back to hashing the raw text when no slug is available (e.g. a
+ * direct `?q=` link). The journey's displayed title comes from the AI's own
+ * short summary of the life event (`generated.title`) rather than the raw
+ * typed sentence.
  */
 export async function getOrRegenerateCustomJourney(input: {
   text: string;
   slug?: string;
   language?: Language;
+  heldIds?: IdType[];
 }): Promise<JourneyResult> {
   const language = input.language ?? "en";
   const text = input.text.trim();
@@ -238,12 +204,13 @@ export async function getOrRegenerateCustomJourney(input: {
   const fallbackLabel =
     text.length > MAX_LABEL_LENGTH ? `${text.slice(0, MAX_LABEL_LENGTH - 1)}…` : text;
 
-  return getOrRegenerate({
+  return generateFresh({
     eventId,
     lifeEvent: text,
     emoji: CUSTOM_EMOJI,
     lifeEventLabel: (generated) => generated.title?.trim() || fallbackLabel,
     language,
+    heldIds: input.heldIds ?? [],
     onFailure: () => emptyResult(eventId, CUSTOM_EMOJI, fallbackLabel, language),
   });
 }

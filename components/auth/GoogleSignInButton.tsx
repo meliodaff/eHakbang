@@ -32,7 +32,7 @@ export function GoogleSignInButton() {
   async function handleClick() {
     setPending(true);
     const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
@@ -41,6 +41,13 @@ export function GoogleSignInButton() {
         queryParams: { prompt: "select_account" },
       },
     });
+    // A real redirect follows on success, so only reachable on failure --
+    // otherwise this button was stuck showing "Redirecting…" forever with
+    // no way to tell the citizen anything went wrong.
+    if (error) {
+      console.error("signInWithOAuth failed:", error.message);
+      setPending(false);
+    }
   }
 
   return (

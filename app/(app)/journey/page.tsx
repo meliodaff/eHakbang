@@ -5,6 +5,10 @@ import {
   getOrRegenerateCustomJourney,
   getOrRegenerateJourney,
 } from "@/lib/server/journey-requirements";
+import { getHeldIdsForCurrentUser } from "@/lib/server/id-wallet";
+import { getStoredJourneyForEvent } from "@/lib/server/stored-journeys";
+import { customEventId } from "@/lib/custom-event";
+import type { Journey } from "@/lib/types";
 
 export default async function JourneyPage({
   searchParams,
@@ -13,23 +17,41 @@ export default async function JourneyPage({
   searchParams: Promise<{ event?: string; q?: string; slug?: string }>;
 }) {
   const { event, q, slug } = await searchParams;
-  // Prefetch AI-generated (cached or freshly regenerated) requirements
-  // server-side so the client never needs its own OpenAI/Supabase keys.
-  // Language is fixed to "en" here since the FIL toggle is client-only.
-  const result =
-    event && getLifeEventById(event)
-      ? await getOrRegenerateJourney({ eventId: event, language: "en" })
-      : q?.trim()
-        ? await getOrRegenerateCustomJourney({ text: q, slug, language: "en" })
-        : null;
+
+  let initialJourney: Journey | undefined;
+  if (event && getLifeEventById(event)) {
+    // Already started this event? Show what's already there instead of
+    // generating a whole new set of requirements for it (see
+    // lib/server/stored-journeys.ts) -- heldIds is only fetched when a fresh
+    // generation is actually needed.
+    initialJourney =
+      (await getStoredJourneyForEvent(event)) ??
+      (
+        await getOrRegenerateJourney({
+          eventId: event,
+          language: "en",
+          heldIds: await getHeldIdsForCurrentUser(),
+        })
+      ).journey;
+  } else if (q?.trim()) {
+    const text = q.trim();
+    const eventId = customEventId(slug?.trim() || text);
+    initialJourney =
+      (await getStoredJourneyForEvent(eventId)) ??
+      (
+        await getOrRegenerateCustomJourney({
+          text,
+          slug,
+          language: "en",
+          heldIds: await getHeldIdsForCurrentUser(),
+        })
+      ).journey;
+  }
+
   return (
     <>
       <EhakbangHeader backHref="/ehakbang" />
-      <JourneyScreen
-        eventId={event}
-        initialJourney={result?.journey}
-        regenerated={result?.regenerated}
-      />
+      <JourneyScreen eventId={event} initialJourney={initialJourney} />
     </>
   );
 }

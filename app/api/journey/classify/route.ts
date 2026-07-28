@@ -17,7 +17,7 @@ const MAX_CHARS = 200;
  *   { text: string; language?: "en" | "fil" }
  *
  * Response:
- *   { eventId: string | null; canonicalSlug: string }
+ *   { eventId: string | null; canonicalSlug: string; isLifeEvent: boolean }
  */
 export async function POST(request: NextRequest) {
   let body: { text?: string; language?: Language };
@@ -36,8 +36,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { matchedEventId, canonicalSlug } = await classifyLifeEvent(text, body.language);
-    return NextResponse.json({ eventId: matchedEventId, canonicalSlug }, { status: 200 });
+    const { matchedEventId, canonicalSlug, isLifeEvent } = await classifyLifeEvent(
+      text,
+      body.language,
+    );
+    return NextResponse.json({ eventId: matchedEventId, canonicalSlug, isLifeEvent }, { status: 200 });
   } catch (err) {
     return NextResponse.json(
       { error: "Failed to classify life event", details: String(err) },

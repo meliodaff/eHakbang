@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLifeEventById } from "@/lib/events";
 import { getOrRegenerateJourney } from "@/lib/server/journey-requirements";
+import { getHeldIdsForCurrentUser } from "@/lib/server/id-wallet";
 import type { Language } from "@/lib/types";
 
 /**
  * POST /api/journey
  *
- * Returns AI-generated (or cached, or seed-fallback) requirements for a
- * predefined life event. Primarily used for manual refresh -- the main
- * `/journey?event=` flow prefetches server-side in `app/journey/page.tsx`.
+ * Returns freshly AI-generated (or seed-fallback) requirements for a
+ * predefined life event, personalized by the signed-in citizen's held IDs.
+ * Primarily used for manual refresh -- the main `/journey?event=` flow
+ * prefetches server-side in `app/journey/page.tsx`.
  *
  * Request body:
  *   { eventId: string; language?: "en" | "fil" }
@@ -33,9 +35,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const heldIds = await getHeldIdsForCurrentUser();
     const { journey, regenerated } = await getOrRegenerateJourney({
       eventId: body.eventId,
       language: body.language,
+      heldIds,
     });
     return NextResponse.json({ journey, regenerated }, { status: 200 });
   } catch (err) {

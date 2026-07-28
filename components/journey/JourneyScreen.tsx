@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Journey } from "@/lib/types";
@@ -9,6 +9,8 @@ import { EVENT_JOURNEYS } from "@/lib/event-journeys";
 import {
   getActiveJourney,
   getStoredJourney,
+  hydrateFromSupabase,
+  startJourney,
   completeStep,
   markStepsDone,
   markStepAutoApplied,
@@ -18,9 +20,9 @@ import {
 } from "@/lib/journey-store";
 import { useIdWallet, stepFulfilledByWallet, setId } from "@/lib/id-wallet";
 import { getPrerequisiteState, type PrerequisiteState } from "@/lib/journey-prerequisites";
+import { isStepNotApplicable } from "@/lib/journey-record-update-gate";
 import { eventSupportsApplyAll } from "@/lib/journey-features";
 import { useT } from "@/lib/i18n";
-import { recordJourneyRefresh } from "@/lib/journey-notice-store";
 import { JourneyView } from "./JourneyView";
 import { ApplyAllPrompt } from "./ApplyAllPrompt";
 import { ApplyAllModal } from "./ApplyAllModal";
@@ -34,13 +36,10 @@ import { ApplyAllModal } from "./ApplyAllModal";
 export function JourneyScreen({
   eventId,
   initialJourney,
-  regenerated = false,
 }: {
   eventId?: string;
-  /** Server-prefetched AI/cache/seed journey for a predefined event (see app/journey/page.tsx). */
+  /** Server-prefetched, freshly AI-generated (or seed-fallback) journey for a predefined event (see app/journey/page.tsx). */
   initialJourney?: Journey;
-  /** True when `initialJourney` was just freshly AI-generated (vs. served from cache/seed). */
-  regenerated?: boolean;
 }) {
   const router = useRouter();
   const t = useT();
@@ -53,34 +52,52 @@ export function JourneyScreen({
   // Shows the submission-progress modal while "Apply All" runs.
   const [showApplyModal, setShowApplyModal] = useState(false);
   const { heldIds, ready: walletReady } = useIdWallet();
-  const refreshNoticeRecorded = useRef(false);
 
   useEffect(() => {
-    let base: Journey | undefined;
-    if (initialJourney) {
-      base = getStoredJourney(initialJourney.id) ?? initialJourney;
-    } else if (eventId && EVENT_JOURNEYS[eventId]) {
-      const catalog = EVENT_JOURNEYS[eventId];
-      base = getStoredJourney(catalog.id) ?? { ...catalog };
-    } else {
-      base = getActiveJourney();
+    let cancelled = false;
+    async function init() {
+      // Reconcile with Supabase first (fills in journeys from another
+      // device/reinstall) so getStoredJourney/getActiveJourney below see
+      // the full picture before deciding whether this is a brand-new start.
+      await hydrateFromSupabase();
+      if (cancelled) return;
+      let base: Journey | undefined;
+      if (initialJourney) {
+        // Persists to localStorage + Supabase the moment the journey is
+        // started (preset card or flexible AI text), not only once a step
+        // is completed.
+        base = getStoredJourney(initialJourney.id) ?? startJourney(initialJourney);
+      } else if (eventId && EVENT_JOURNEYS[eventId]) {
+        const catalog = EVENT_JOURNEYS[eventId];
+        base = getStoredJourney(catalog.id) ?? startJourney({ ...catalog });
+      } else {
+        base = getActiveJourney();
+      }
+      setJourney(base ?? null);
+      setReady(true);
     }
-    setJourney(base ?? null);
-    setReady(true);
+    void init();
+    return () => {
+      cancelled = true;
+    };
   }, [eventId, initialJourney]);
-
-  useEffect(() => {
-    if (regenerated && initialJourney && !refreshNoticeRecorded.current) {
-      refreshNoticeRecorded.current = true;
-      recordJourneyRefresh(initialJourney.event_id ?? "", initialJourney.life_event);
-    }
-  }, [regenerated, initialJourney]);
 
   // Steps auto-satisfied because the matching ID is already in the wallet.
   const walletStepNumbers = useMemo(() => {
     if (!journey) return [];
     return journey.steps
       .filter((s) => stepFulfilledByWallet(s, heldIds))
+      .map((s) => s.step_number);
+  }, [journey, heldIds]);
+
+  // Record-update steps that don't apply because the citizen doesn't hold
+  // the ID they'd update (e.g. "Update civil status with SSS" when the
+  // citizen has no SSS number on file) -- there's nothing to update, so
+  // these count as resolved without requiring any action.
+  const notApplicableStepNumbers = useMemo(() => {
+    if (!journey) return [];
+    return journey.steps
+      .filter((s) => isStepNotApplicable(s, heldIds))
       .map((s) => s.step_number);
   }, [journey, heldIds]);
 
@@ -106,13 +123,22 @@ export function JourneyScreen({
     [prerequisiteStates],
   );
 
-  // Manual completions ∪ wallet-satisfied steps.
+  // Steps resolved without the citizen manually completing them: wallet-
+  // satisfied (already has the ID) or not-applicable (doesn't have the ID an
+  // update step would need). Folded into completion the same way in both
+  // places, so progress/allDone/persisted state stay consistent.
+  const autoResolvedStepNumbers = useMemo(
+    () => [...walletStepNumbers, ...notApplicableStepNumbers],
+    [walletStepNumbers, notApplicableStepNumbers],
+  );
+
+  // Manual completions ∪ auto-resolved steps.
   const effectiveCompleted = useMemo(() => {
     if (!journey) return [];
     return Array.from(
-      new Set([...journey.completed_step_numbers, ...walletStepNumbers]),
+      new Set([...journey.completed_step_numbers, ...autoResolvedStepNumbers]),
     );
-  }, [journey, walletStepNumbers]);
+  }, [journey, autoResolvedStepNumbers]);
 
   const allDone =
     !!journey &&
@@ -133,8 +159,8 @@ export function JourneyScreen({
   function handleComplete(stepNumber: number) {
     setJourney((current) => {
       if (!current) return current;
-      // Fold wallet-satisfied steps in so progress/completion stay accurate.
-      const updated = completeStep(current, stepNumber, walletStepNumbers);
+      // Fold auto-resolved steps in so progress/completion stay accurate.
+      const updated = completeStep(current, stepNumber, autoResolvedStepNumbers);
       routeToCompletionIfDone(updated);
       return updated;
     });
@@ -146,7 +172,7 @@ export function JourneyScreen({
   function handleAutoApplied(stepNumber: number) {
     setJourney((current) => {
       if (!current) return current;
-      const updated = markStepAutoApplied(current, stepNumber, walletStepNumbers);
+      const updated = markStepAutoApplied(current, stepNumber, autoResolvedStepNumbers);
       routeToCompletionIfDone(updated);
       return updated;
     });
@@ -177,7 +203,7 @@ export function JourneyScreen({
 
   function handleFinish() {
     if (!journey) return;
-    const updated = markStepsDone(journey, walletStepNumbers);
+    const updated = markStepsDone(journey, autoResolvedStepNumbers);
     setJourney(updated);
     router.push(`/journey/complete?id=${encodeURIComponent(updated.id)}`);
   }
@@ -194,7 +220,7 @@ export function JourneyScreen({
   function handleApplyAllFinished() {
     if (!journey) return;
     const allSteps = journey.steps.map((s) => s.step_number);
-    const updated = markStepsDone(journey, [...allSteps, ...walletStepNumbers]);
+    const updated = markStepsDone(journey, [...allSteps, ...autoResolvedStepNumbers]);
     setJourney(updated);
     setShowApplyModal(false);
     router.push(`/journey/complete?id=${encodeURIComponent(updated.id)}`);
@@ -269,6 +295,7 @@ export function JourneyScreen({
         journey={journey}
         completed={effectiveCompleted}
         walletStepNumbers={walletStepNumbers}
+        notApplicableStepNumbers={notApplicableStepNumbers}
         prerequisiteStates={prerequisiteStates}
         afterHeader={
           showApplyAll ? (

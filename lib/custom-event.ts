@@ -4,9 +4,11 @@ import { createHash } from "node:crypto";
 /**
  * Deterministic id for a free-text life event that doesn't match any preset
  * (see `lib/navigate-to-event.ts`/classification). Hashing the normalized
- * text means identical repeat phrasing reuses the same 24h
- * `journey_requirements` cache row as a preset event would, without needing
- * a catalog entry.
+ * text means identical repeat phrasing resolves to the same stable journey
+ * id as a preset event would (see `lib/server/journey-requirements.ts`), so
+ * `lib/journey-store.ts` can recognize a returning citizen's in-progress
+ * journey and preserve their local progress, without needing a catalog
+ * entry.
  */
 
 const CUSTOM_PREFIX = "custom:";

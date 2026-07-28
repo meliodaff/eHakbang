@@ -10,10 +10,38 @@ type VerifyState = "idle" | "loading" | "error";
  * Third screen of the civil-status onboarding flow: redirects the user to the
  * eGov Face Liveness verification page. On completion, the eGov page redirects
  * back to /journey/confirm/verify/callback where the result is checked.
+ * Also reused for a custom event's evidence flow -- `target`/`title`/
+ * `description` carry the AI's copy and final destination through instead
+ * of a fixed `eventId` (see `app/journey/start/page.tsx`).
  */
-export function FaceVerifyScreen({ eventId }: { eventId?: string }) {
+export function FaceVerifyScreen({
+  eventId,
+  target,
+  title,
+  description,
+}: {
+  eventId?: string;
+  /** URL-encoded final destination once verification passes -- used for a custom event instead of `eventId`. */
+  target?: string;
+  /** Carried through only so the back link can reconstruct the exact document-upload screen. */
+  title?: string;
+  description?: string;
+}) {
   const [state, setState] = useState<VerifyState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const carryParams = target
+    ? (() => {
+        const p = new URLSearchParams({ target });
+        if (title) p.set("title", title);
+        if (description) p.set("description", description);
+        return p;
+      })()
+    : null;
+
+  const backHref = carryParams
+    ? `/journey/confirm/document?${carryParams.toString()}`
+    : `/journey/confirm/document?event=${encodeURIComponent(eventId ?? "")}`;
 
   async function handleStart() {
     setState("loading");
@@ -27,7 +55,9 @@ export function FaceVerifyScreen({ eventId }: { eventId?: string }) {
         "/journey/confirm/verify/callback",
         window.location.origin,
       );
-      if (eventId) {
+      if (carryParams) {
+        carryParams.forEach((value, key) => callbackBase.searchParams.set(key, value));
+      } else if (eventId) {
         callbackBase.searchParams.set("event", eventId);
       }
 
@@ -64,9 +94,7 @@ export function FaceVerifyScreen({ eventId }: { eventId?: string }) {
 
   return (
     <main className="flex flex-1 flex-col">
-      <EhakbangHeader
-        backHref={`/journey/confirm/document?event=${encodeURIComponent(eventId ?? "")}`}
-      />
+      <EhakbangHeader backHref={backHref} />
 
       <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
         <div>
@@ -89,7 +117,7 @@ export function FaceVerifyScreen({ eventId }: { eventId?: string }) {
           )}
           aria-hidden
         >
-          {state === "error" ? "\u2717" : "\uD83D\uDE42"}
+          {state === "error" ? "✗" : "🙂"}
         </div>
 
         {state === "error" && errorMsg && (
@@ -103,7 +131,7 @@ export function FaceVerifyScreen({ eventId }: { eventId?: string }) {
           className="min-h-11 w-full rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:bg-border disabled:text-muted"
         >
           {state === "loading"
-            ? "Connecting\u2026"
+            ? "Connecting…"
             : state === "error"
               ? "Try Again"
               : "Start Face Verification"}

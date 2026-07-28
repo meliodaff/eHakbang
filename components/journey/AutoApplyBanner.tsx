@@ -29,9 +29,10 @@ const RESUME_PAY_KEY = "ehakbang:resume-pay";
 const PAYMENT_VERIFIED_TOKEN_KEY = "ehakbang:payment-verified-token";
 
 /**
- * Offers to auto-submit the citizen's civil-status update to the remaining
- * agencies on their behalf, using the certificate/decree they already
- * uploaded — shown only on civil-status journeys (marriage, annulment).
+ * Offers to auto-submit the citizen's remaining steps to their agencies on
+ * their behalf — shown on every journey (civil-status preset events using
+ * the certificate/decree they already uploaded, and flexible/custom
+ * AI-generated journeys alike, per FR-16).
  *
  * When any pending step carries a payable government fee, an intermediate
  * "billing" stage lets the citizen pay the bundled total via eGovPay before
@@ -66,10 +67,10 @@ export function AutoApplyBanner({
   const [fieldAnswers, setLocalFieldAnswers] = useState<
     Record<number, Record<string, string>>
   >(journey.field_answers ?? {});
+  const isCivil = isCivilStatusEvent(journey.event_id);
   const transition = getCivilStatusTransition(journey.event_id);
 
-  const targetSteps = isCivilStatusEvent(journey.event_id) ? journey.steps : [];
-  const pendingSteps = targetSteps.filter(
+  const pendingSteps = journey.steps.filter(
     (s) => !completed.includes(s.step_number),
   );
   const feeBill = getFeeBill(pendingSteps, journey.paid_step_numbers ?? []);
@@ -206,10 +207,12 @@ export function AutoApplyBanner({
           <div>
             <p className="text-sm font-bold text-foreground">⚡ Auto Apply</p>
             <p className="mt-1 text-sm text-foreground">
-              Would you like us to auto-apply your update to the remaining{" "}
+              {isCivil
+                ? "Would you like us to auto-apply your update to the remaining "
+                : "Would you like us to auto-apply to the remaining "}
               {pendingSteps.length}{" "}
-              {pendingSteps.length === 1 ? "agency" : "agencies"} using your
-              uploaded certificate?
+              {pendingSteps.length === 1 ? "agency" : "agencies"}
+              {isCivil ? " using your uploaded certificate?" : " on your behalf?"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -358,20 +361,22 @@ export function AutoApplyBanner({
                           : "Pending"}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-muted">
-                    Requested civil status update:{" "}
-                    {isSubmitted ? (
-                      <span>
-                        <span className="line-through">{transition.from}</span>{" "}
-                        <span className="font-semibold text-egov-blue">
-                          → {transition.to}
+                  {isCivil && (
+                    <p className="mt-1 text-xs text-muted">
+                      Requested civil status update:{" "}
+                      {isSubmitted ? (
+                        <span>
+                          <span className="line-through">{transition.from}</span>{" "}
+                          <span className="font-semibold text-egov-blue">
+                            → {transition.to}
+                          </span>
                         </span>
-                      </span>
-                    ) : (
-                      transition.from
-                    )}
-                  </p>
-                  {step.agency_code === "PHILSYS" && (
+                      ) : (
+                        transition.from
+                      )}
+                    </p>
+                  )}
+                  {isCivil && step.agency_code === "PHILSYS" && (
                     <p className="mt-1 text-xs italic text-muted">
                       Example: {transition.surnameExample}
                     </p>

@@ -14,6 +14,7 @@ export function JourneyView({
   journey,
   completed,
   walletStepNumbers = [],
+  notApplicableStepNumbers = [],
   prerequisiteStates = {},
   afterHeader,
   onComplete,
@@ -27,6 +28,8 @@ export function JourneyView({
   completed: number[];
   /** Step numbers satisfied by IDs already in the user's wallet. */
   walletStepNumbers?: number[];
+  /** Record-update step numbers that don't apply because the citizen lacks the ID they'd update. */
+  notApplicableStepNumbers?: number[];
   /** Per-step prerequisite status (blocked/met) keyed by step_number. */
   prerequisiteStates?: Record<number, PrerequisiteState>;
   /** Optional content rendered directly below the summary header. */
@@ -60,6 +63,7 @@ export function JourneyView({
             step={step}
             completed={completed.includes(step.step_number)}
             walletFulfilled={walletStepNumbers.includes(step.step_number)}
+            notApplicable={notApplicableStepNumbers.includes(step.step_number)}
             autoApplied={journey.auto_applied_step_numbers.includes(step.step_number)}
             claimed={journey.claimed_step_numbers.includes(step.step_number)}
             submitted={(journey.submitted_step_numbers ?? []).includes(step.step_number)}

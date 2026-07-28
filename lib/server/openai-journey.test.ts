@@ -1,11 +1,17 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // The module under test imports "server-only" (throws under jsdom) and the
-// "openai" SDK; stub both so the pure inferPrerequisite export can be tested.
+// "openai" SDK; stub both.
 vi.mock("server-only", () => ({}));
-vi.mock("openai", () => ({ default: class {} }));
 
-import { inferPrerequisite, inferFulfillsId } from "./openai-journey";
+const { create } = vi.hoisted(() => ({ create: vi.fn() }));
+vi.mock("openai", () => ({
+  default: vi.fn().mockImplementation(() => ({
+    responses: { create },
+  })),
+}));
+
+import { generateJourneyWithOpenAI, inferPrerequisite, inferFulfillsId } from "./openai-journey";
 import type { JourneyStep } from "@/lib/types";
 
 type StepInput = Pick<JourneyStep, "step_type" | "agency_code" | "step_title">;
@@ -83,5 +89,76 @@ describe("inferFulfillsId", () => {
         step_title: "File for Pag-IBIG Maternity (MP2) Claim",
       }),
     ).toBeUndefined();
+  });
+});
+
+describe("generateJourneyWithOpenAI", () => {
+  beforeEach(() => {
+    create.mockReset();
+    process.env.OPENAI_API_KEY = "test-key";
+    create.mockResolvedValue({
+      output_text: JSON.stringify({
+        summary: "Summary",
+        title: "Title",
+        requires_evidence: false,
+        evidence_title: null,
+        evidence_description: null,
+        steps: [],
+      }),
+    });
+  });
+
+  it("tells the model which IDs the citizen currently holds", async () => {
+    await generateJourneyWithOpenAI({
+      eventId: "got-married",
+      lifeEvent: "Got married",
+      language: "en",
+      heldIds: ["sss", "philhealth"],
+    });
+
+    const callArgs = create.mock.calls[0][0];
+    const userMessage = callArgs.input.find((m: { role: string }) => m.role === "user");
+    expect(userMessage.content).toContain(
+      "Citizen's currently held government IDs/memberships: sss, philhealth.",
+    );
+  });
+
+  it("tells the model when no IDs are held", async () => {
+    await generateJourneyWithOpenAI({
+      eventId: "got-married",
+      lifeEvent: "Got married",
+      language: "en",
+      heldIds: [],
+    });
+
+    const callArgs = create.mock.calls[0][0];
+    const userMessage = callArgs.input.find((m: { role: string }) => m.role === "user");
+    expect(userMessage.content).toContain(
+      "Citizen's currently held government IDs/memberships: none.",
+    );
+  });
+
+  it("returns the evidence decision from the model's output", async () => {
+    create.mockResolvedValue({
+      output_text: JSON.stringify({
+        summary: "Summary",
+        title: "Title",
+        requires_evidence: true,
+        evidence_title: "Attach proof of adoption",
+        evidence_description: "Upload your adoption certificate.",
+        steps: [],
+      }),
+    });
+
+    const result = await generateJourneyWithOpenAI({
+      eventId: "adopted-a-dog",
+      lifeEvent: "I am adopting a rescue dog",
+      language: "en",
+      heldIds: [],
+    });
+
+    expect(result.requires_evidence).toBe(true);
+    expect(result.evidence_title).toBe("Attach proof of adoption");
+    expect(result.evidence_description).toBe("Upload your adoption certificate.");
   });
 });

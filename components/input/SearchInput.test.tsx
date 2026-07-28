@@ -86,9 +86,25 @@ describe("SearchInput", () => {
     );
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith(
-        "/journey?q=I%20am%20adopting%20a%20rescue%20dog",
+        "/journey/start?q=I%20am%20adopting%20a%20rescue%20dog",
       ),
     );
+  });
+
+  it("blocks submission and shows an error when the text isn't a real life event", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ eventId: null, isLifeEvent: false }),
+    });
+    render(<SearchInput />);
+    fireEvent.change(screen.getByLabelText(/ilarawan/i), {
+      target: { value: "asdkjfhaskjdfh" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /generate my journey/i }),
+    );
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("falls back to a custom journey when classification is unavailable", async () => {
@@ -102,12 +118,12 @@ describe("SearchInput", () => {
     );
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith(
-        "/journey?q=I%20am%20adopting%20a%20rescue%20dog",
+        "/journey/start?q=I%20am%20adopting%20a%20rescue%20dog",
       ),
     );
   });
 
-  it("forwards the canonical slug so same-context phrasings can share a cached journey", async () => {
+  it("forwards the canonical slug so same-context phrasings resolve to the same journey", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -124,7 +140,7 @@ describe("SearchInput", () => {
     );
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith(
-        "/journey?q=I%20got%20accepted%20as%20a%20PH%20rep%20for%20a%20tournament%20in%20the%20US&slug=representing-ph-international-tournament",
+        "/journey/start?q=I%20got%20accepted%20as%20a%20PH%20rep%20for%20a%20tournament%20in%20the%20US&slug=representing-ph-international-tournament",
       ),
     );
   });

@@ -2,11 +2,21 @@
 
 import { useEffect, useState } from "react";
 import type { Journey } from "./types";
+import {
+  deleteAllJourneysFromSupabase,
+  deleteJourneysFromSupabase,
+  fetchJourneysFromSupabase,
+  syncJourneyToSupabase,
+} from "./journey-sync";
 
 /**
- * Client-side journey persistence (PRD FR-08/09). Journeys live in
- * localStorage; a journey is created only when the user actually engages
- * (marks a step done), so a fresh install shows a clean slate.
+ * Client-side journey persistence (PRD FR-08/09). localStorage is the
+ * source of truth for instant reads/writes; every mutation also fires a
+ * best-effort sync to the `journeys` Supabase table (see `journey-sync.ts`)
+ * keyed to the signed-in user, so "My Journeys" and Track survive a
+ * reinstall/new device. A journey is persisted (locally and to Supabase) as
+ * soon as the citizen starts it -- see `startJourney` -- not only once they
+ * complete a step.
  */
 
 const KEY = "ehakbang:journeys";
@@ -101,7 +111,48 @@ function persist(
   if (idx < 0) list.unshift(record);
   else list[idx] = record;
   write(list);
+  void syncJourneyToSupabase(record);
   return record;
+}
+
+/**
+ * Persist a freshly generated journey the moment the citizen starts it --
+ * tapping a preset "Piliin ang life event" card or submitting the flexible
+ * AI textbox -- rather than waiting for their first step interaction. Safe
+ * to call speculatively: no-ops (returns the existing record unchanged) if
+ * this journey id is already stored, so it never clobbers progress.
+ */
+export function startJourney(journey: Journey): Journey {
+  const existing = getStoredJourney(journey.id);
+  if (existing) return existing;
+  return persist(
+    journey,
+    journey.completed_step_numbers,
+    journey.paid_step_numbers,
+    journey.field_answers,
+    journey.auto_applied_step_numbers,
+    journey.claimed_step_numbers,
+    journey.submitted_step_numbers,
+  );
+}
+
+let hydrated = false;
+
+/**
+ * One-time-per-session reconciliation with Supabase: fills in any journeys
+ * that exist server-side (another device, a reinstall) but aren't in this
+ * browser's localStorage yet. Never overwrites a locally present journey --
+ * local state (already synced up via `persist`) always wins on conflict.
+ */
+export async function hydrateFromSupabase(): Promise<void> {
+  if (hydrated) return;
+  hydrated = true;
+  const remote = await fetchJourneysFromSupabase();
+  if (remote.length === 0) return;
+  const local = read();
+  const localIds = new Set(local.map((j) => j.id));
+  const missing = remote.filter((j) => !localIds.has(j.id));
+  if (missing.length > 0) write([...local, ...missing]);
 }
 
 /** Completions already persisted for this journey (or the base's own set). */
@@ -243,7 +294,11 @@ export function setFieldAnswers(
 
 /** Remove any stored journey for a given life-event id (e.g. "got-married"). */
 export function resetJourney(eventId: string): void {
+  const removedIds = read()
+    .filter((j) => j.event_id === eventId)
+    .map((j) => j.id);
   write(read().filter((j) => j.event_id !== eventId));
+  void deleteJourneysFromSupabase(removedIds);
 }
 
 export function archiveJourney(id: string): void {
@@ -252,11 +307,13 @@ export function archiveJourney(id: string): void {
   if (idx >= 0) {
     list[idx] = { ...list[idx], status: "archived" };
     write(list);
+    void syncJourneyToSupabase(list[idx]);
   }
 }
 
 export function clearAllJourneys(): void {
   write([]);
+  void deleteAllJourneysFromSupabase();
 }
 
 /** Reactive list of stored journeys (re-renders on any change, incl. other tabs). */
@@ -272,6 +329,10 @@ export function useJourneys(): { journeys: Journey[]; ready: boolean } {
     update();
     window.addEventListener(CHANGE_EVENT, update);
     window.addEventListener("storage", update);
+    // Reconciles with Supabase once per session -- write() (called inside
+    // hydrateFromSupabase) dispatches CHANGE_EVENT itself, so `update` above
+    // re-reads automatically once it resolves.
+    void hydrateFromSupabase();
     return () => {
       window.removeEventListener(CHANGE_EVENT, update);
       window.removeEventListener("storage", update);

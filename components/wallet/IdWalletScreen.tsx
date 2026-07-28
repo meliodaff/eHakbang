@@ -1,17 +1,63 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ID_CATALOG, useIdWallet } from "@/lib/id-wallet";
+import { fetchIdWalletFromSupabase, saveIdWalletToSupabase } from "@/lib/id-wallet-sync";
+import type { IdType } from "@/lib/types";
+
+/** Order-independent equality check for two ID-type lists. */
+function sameIds(a: IdType[], b: IdType[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  return b.every((id) => set.has(id));
+}
 
 /**
  * ID Wallet manager. The citizen toggles which government IDs they already
  * hold; journeys then auto-complete steps whose purpose is to obtain those IDs.
+ * Checking/unchecking is instant locally (drives journey auto-completion right
+ * away), but only persists to the database once the citizen taps "Save
+ * changes" -- the button appears while the selection differs from what's last
+ * saved, and disappears once it matches again (including reverting a toggle).
  *
- * PRIVACY: only the presence of an ID type is stored on-device. No ID numbers,
- * names, or documents are collected or transmitted (PRD privacy-first posture).
+ * PRIVACY: only the presence of an ID type is stored. No ID numbers, names,
+ * or documents are collected or transmitted (PRD privacy-first posture).
  */
 export function IdWalletScreen() {
   const { heldIds, ready, setId } = useIdWallet();
   const heldCount = heldIds.length;
+
+  // Last selection known to be saved in Supabase -- null while unknown
+  // (still loading), so the Save button never flashes on first paint.
+  const [savedIds, setSavedIds] = useState<IdType[] | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    void fetchIdWalletFromSupabase().then((saved) => {
+      if (!cancelled) setSavedIds(saved ?? []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  const dirty = savedIds !== null && !sameIds(heldIds, savedIds);
+
+  async function handleSaveChanges() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await saveIdWalletToSupabase(heldIds);
+      setSavedIds(heldIds);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Couldn't save your changes.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-5 py-5">
@@ -69,6 +115,24 @@ export function IdWalletScreen() {
           );
         })}
       </ul>
+
+      {dirty && (
+        <div className="flex flex-col gap-2">
+          {saveError && (
+            <p className="text-xs font-semibold text-egov-danger" role="alert">
+              {saveError}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={handleSaveChanges}
+            disabled={saving}
+            className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "Sinisave…" : "Save changes"}
+          </button>
+        </div>
+      )}
 
       <p className="mt-auto rounded-egov bg-egov-success-bg px-4 py-3 text-xs text-egov-success">
         Privacy-first: ang listahan lang ng uri ng ID ang naka-save sa device

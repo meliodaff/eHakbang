@@ -11,7 +11,19 @@ function FaceVerifyCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventId = searchParams.get("event") ?? "";
+  const target = searchParams.get("target");
+  const title = searchParams.get("title");
+  const description = searchParams.get("description");
   const [status, setStatus] = useState<Status>("loading");
+
+  const carryParams = target
+    ? (() => {
+        const p = new URLSearchParams({ target });
+        if (title) p.set("title", title);
+        if (description) p.set("description", description);
+        return p;
+      })()
+    : null;
 
   useEffect(() => {
     // Resolve the liveness session token. Priority:
@@ -52,22 +64,26 @@ function FaceVerifyCallbackContent() {
   }, [searchParams]);
 
   function handleContinue() {
-    router.push(`/journey?event=${encodeURIComponent(eventId)}`);
+    router.push(target ?? `/journey?event=${encodeURIComponent(eventId)}`);
   }
 
   function handleRetry() {
     // Clean up the failed token so a fresh session can be started
     sessionStorage.removeItem("ehakbang:liveness-token");
     router.push(
-      `/journey/confirm/verify?event=${encodeURIComponent(eventId)}`,
+      carryParams
+        ? `/journey/confirm/verify?${carryParams.toString()}`
+        : `/journey/confirm/verify?event=${encodeURIComponent(eventId)}`,
     );
   }
 
+  const backHref = carryParams
+    ? `/journey/confirm/document?${carryParams.toString()}`
+    : `/journey/confirm/document?event=${encodeURIComponent(eventId)}`;
+
   return (
     <main className="flex flex-1 flex-col">
-      <EhakbangHeader
-        backHref={`/journey/confirm/document?event=${encodeURIComponent(eventId)}`}
-      />
+      <EhakbangHeader backHref={backHref} />
 
       <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
         <div>

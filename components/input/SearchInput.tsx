@@ -30,8 +30,8 @@ function matchEvents(query: string): LifeEvent[] {
  * Free text that doesn't match a suggestion chip is first classified against
  * the preset catalog (`/api/journey/classify`) so a paraphrased match (e.g.
  * "I just became a parent") still routes into that preset's confirm/verify
- * flow; only genuinely new events fall through to a custom AI-generated
- * journey at `/journey?q=`.
+ * flow; only genuinely new events fall through to the custom-event intake
+ * gate at `/journey/start?q=` (generation + evidence/liveness verification).
  */
 export function SearchInput() {
   const router = useRouter();
@@ -69,10 +69,22 @@ export function SearchInput() {
         const data = (await res.json()) as {
           eventId: string | null;
           canonicalSlug?: string;
+          isLifeEvent?: boolean;
         };
         const matched = data.eventId ? getLifeEventById(data.eventId) : undefined;
         if (matched) {
           navigateToEvent(router, matched);
+          return;
+        }
+        // Only blocks on a confident "no" from the classifier -- anything
+        // else (a real but uncatalogued situation, or the classifier being
+        // unavailable) still falls through to the custom journey below, so
+        // an ambiguous description or a service hiccup never blocks a
+        // legitimate citizen.
+        if (data.isLifeEvent === false) {
+          setError(
+            "Parang hindi ito naglalarawan ng tunay na life event. Subukan ulit gamit ang mas malinaw na paglalarawan (hal. bagong kasal, nawalan ng trabaho).",
+          );
           return;
         }
         canonicalSlug = data.canonicalSlug ?? null;
@@ -84,7 +96,10 @@ export function SearchInput() {
       setLoading(false);
     }
     const slugParam = canonicalSlug ? `&slug=${encodeURIComponent(canonicalSlug)}` : "";
-    router.push(`/journey?q=${encodeURIComponent(trimmed)}${slugParam}`);
+    // Routes through the intake gate rather than straight to /journey so a
+    // custom event that needs evidence (per the AI's own judgment) asks for
+    // it before showing the checklist -- see app/journey/start/page.tsx.
+    router.push(`/journey/start?q=${encodeURIComponent(trimmed)}${slugParam}`);
   }
 
   return (

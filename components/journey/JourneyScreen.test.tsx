@@ -23,6 +23,20 @@ vi.mock("@/lib/api-client", () => ({
 let queued: Set<number>;
 
 /**
+ * Holds every ID these tests' civil-status journeys touch, so their
+ * record-update steps ("Update civil status with SSS", etc.) are actionable
+ * instead of auto-resolving as not-applicable (see
+ * lib/journey-record-update-gate.ts) -- these tests exercise driving every
+ * step to completion manually, not the not-applicable gate itself.
+ */
+function seedIdWallet() {
+  localStorage.setItem(
+    "ehakbang:id-wallet",
+    JSON.stringify(["sss", "philhealth", "pagibig", "tin", "philsys"]),
+  );
+}
+
+/**
  * Unlocks every benefit currently shown in a locked "action needed" state by
  * declaring the citizen already holds the required ID -- so the claim's
  * Auto Apply action appears and completeAllSteps can drive it.
@@ -135,6 +149,7 @@ describe("JourneyScreen", () => {
   });
 
   it("goes to the celebration screen once the married journey is fully complete", async () => {
+    seedIdWallet();
     render(<JourneyScreen eventId="got-married" />);
     await act(async () => {});
     const catalog = getJourneyByEventId("got-married")!;
@@ -146,6 +161,7 @@ describe("JourneyScreen", () => {
   });
 
   it("goes to the celebration screen once the annulment journey is fully complete", async () => {
+    seedIdWallet();
     render(<JourneyScreen eventId="annulment" />);
     await act(async () => {});
     const catalog = getJourneyByEventId("annulment")!;
@@ -157,6 +173,7 @@ describe("JourneyScreen", () => {
   });
 
   it("goes to the celebration screen for a non-married journey", async () => {
+    seedIdWallet();
     render(<JourneyScreen eventId="had-a-baby" />);
     await act(async () => {});
     const catalog = getJourneyByEventId("had-a-baby")!;
@@ -187,5 +204,16 @@ describe("JourneyScreen", () => {
     expect(screen.getAllByText(/action needed/i).length).toBe(
       enrollButtons.length - 1,
     );
+  });
+
+  it("marks a civil-status update step not applicable when the citizen lacks the ID it would update", async () => {
+    // Empty wallet: got-married's SSS step ("Update civil status &
+    // beneficiaries") has no fulfills_id -- it updates an existing SSS
+    // record the citizen doesn't have yet, so it should resolve as N/A
+    // rather than requiring an Auto Apply click.
+    render(<JourneyScreen eventId="got-married" />);
+    await act(async () => {});
+
+    expect(screen.getAllByText(/not applicable/i).length).toBeGreaterThan(0);
   });
 });

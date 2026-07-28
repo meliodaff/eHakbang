@@ -10,14 +10,49 @@ import { cn } from "@/lib/cn";
 /**
  * Second screen of the civil-status onboarding flow: attach evidence of the
  * life event (e.g. a PSA marriage certificate or annulment decree) before
- * identity verification.
+ * identity verification. Also reused, with the exact same UI, for a custom
+ * (AI-generated) life event that the model decided needs supporting
+ * evidence -- `target`/`title`/`description` carry the AI's own copy and
+ * final destination in place of a fixed preset `eventId`/catalog lookup
+ * (see `app/journey/start/page.tsx`).
  */
-export function DocumentUploadScreen({ eventId }: { eventId?: string }) {
+export function DocumentUploadScreen({
+  eventId,
+  target,
+  title,
+  description,
+}: {
+  eventId?: string;
+  /** URL-encoded final destination once verification passes -- used for a custom event instead of `eventId`. */
+  target?: string;
+  /** AI-generated evidence copy override for a custom event, in place of the static per-preset-event copy. */
+  title?: string;
+  description?: string;
+}) {
   const router = useRouter();
   const inputId = useId();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const copy = getCivilStatusCopy(eventId);
+  const copy = title
+    ? {
+        documentTitle: title,
+        documentDescription: description || "Upload a document that supports this update.",
+      }
+    : getCivilStatusCopy(eventId);
+
+  const carryParams = target
+    ? (() => {
+        const p = new URLSearchParams({ target });
+        if (title) p.set("title", title);
+        if (description) p.set("description", description);
+        return p;
+      })()
+    : null;
+
+  const backHref = carryParams ? "/ehakbang" : `/journey/confirm?event=${encodeURIComponent(eventId ?? "")}`;
+  const nextHref = carryParams
+    ? `/journey/confirm/verify?${carryParams.toString()}`
+    : `/journey/confirm/verify?event=${encodeURIComponent(eventId ?? "")}`;
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setFile(e.target.files?.[0] ?? null);
@@ -27,16 +62,12 @@ export function DocumentUploadScreen({ eventId }: { eventId?: string }) {
     if (!file || uploading) return;
     setUploading(true);
     await uploadEvidenceDocument(file);
-    router.push(
-      `/journey/confirm/verify?event=${encodeURIComponent(eventId ?? "")}`,
-    );
+    router.push(nextHref);
   }
 
   return (
     <main className="flex flex-1 flex-col">
-      <EhakbangHeader
-        backHref={`/journey/confirm?event=${encodeURIComponent(eventId ?? "")}`}
-      />
+      <EhakbangHeader backHref={backHref} />
 
       <div className="flex flex-1 flex-col gap-5 px-6 py-6">
         <div>

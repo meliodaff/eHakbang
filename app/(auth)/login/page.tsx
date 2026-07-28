@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase/server-client";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ confirm?: string; egov_error?: string }>;
+  searchParams: Promise<{ confirm?: string; egov_error?: string; google_error?: string }>;
 }) {
-  const { confirm, egov_error: egovError } = await searchParams;
+  const { confirm, egov_error: egovError, google_error: googleError } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -33,6 +33,11 @@ export default async function LoginPage({
       {egovError === "1" && (
         <p className="rounded-egov bg-red-50 px-4 py-2.5 text-sm text-egov-danger">
           Could not sign in with eGov. Please try again.
+        </p>
+      )}
+      {googleError === "1" && (
+        <p className="rounded-egov bg-red-50 px-4 py-2.5 text-sm text-egov-danger">
+          Could not sign in with Google. Please try again.
         </p>
       )}
       <LoginForm confirmNotice={confirm === "1"} />

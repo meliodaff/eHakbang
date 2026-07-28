@@ -280,6 +280,32 @@ describe("AutoApplyBanner", () => {
     );
   });
 
+  it("offers auto apply and fee billing on a non-civil-status (flexible/custom) journey too", () => {
+    const custom = journey({
+      id: "ehakbang:journey:event:custom-abc123",
+      event_id: "custom-abc123",
+      steps: [
+        step({
+          step_number: 1,
+          agency_name: "DFA",
+          fee: { amount: "₱950", currency: "PHP", how_to_pay: "Pay at branch" },
+        }),
+      ],
+      total_steps: 1,
+      record_updates: 1,
+    });
+
+    render(<AutoApplyBanner journey={custom} completed={[]} onComplete={onComplete} />);
+
+    expect(screen.queryByText(/uploaded certificate/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /yes, auto apply/i }));
+
+    expect(screen.getByText(/pay government fees/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /pay ₱950.00 via egovpay/i }),
+    ).toBeInTheDocument();
+  });
+
   it("resumes straight into payment when the resume-pay flag matches this journey", async () => {
     const withFee = journey({
       steps: [

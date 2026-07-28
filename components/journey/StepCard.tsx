@@ -8,6 +8,7 @@ import { linkifyText, stripInlineLinks } from "@/lib/format-ai-text";
 import { getMissingRequiredFields } from "@/lib/journey-fields";
 import { fetchAutoApplyStatus, submitAutoApply, submitEnrollment } from "@/lib/api-client";
 import { ID_CATALOG } from "@/lib/id-wallet";
+import { inferRequiredExistingId } from "@/lib/journey-record-update-gate";
 import type { PrerequisiteState } from "@/lib/journey-prerequisites";
 import {
   getEligibilityRequirements,
@@ -52,6 +53,7 @@ export function StepCard({
   step,
   completed,
   walletFulfilled = false,
+  notApplicable = false,
   autoApplied,
   claimed,
   submitted = false,
@@ -69,6 +71,8 @@ export function StepCard({
   completed: boolean;
   /** True when this step is satisfied by an ID already in the user's wallet. */
   walletFulfilled?: boolean;
+  /** True when this record-update step doesn't apply because the citizen lacks the ID it would update. */
+  notApplicable?: boolean;
   /** True once this step was completed via the mocked Auto Apply queue. */
   autoApplied: boolean;
   /** True once the auto-applied step's document has been claimed at the agency office. */
@@ -120,6 +124,12 @@ export function StepCard({
   const requiredId = step.prerequisite?.required_id;
   const requiredIdLabel = requiredId
     ? ID_CATALOG.find((e) => e.id === requiredId)?.label ?? requiredId
+    : "";
+
+  // For a not-applicable record-update step, the ID it would have updated.
+  const requiredExistingId = inferRequiredExistingId(step);
+  const requiredExistingIdLabel = requiredExistingId
+    ? ID_CATALOG.find((e) => e.id === requiredExistingId)?.label ?? requiredExistingId
     : "";
 
   // Membership is resolved (not blocked) but the claim still needs an
@@ -373,7 +383,13 @@ export function StepCard({
         </a>
 
         {completed ? (
-          walletFulfilled ? (
+          notApplicable ? (
+            <p className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov bg-background px-4 py-2.5 text-center text-sm font-semibold text-muted">
+              <span aria-hidden>—</span>{" "}
+              {t("Not applicable — you don't have a")} {t(requiredExistingIdLabel)}{" "}
+              {t("on file, so there's nothing to update.")}
+            </p>
+          ) : walletFulfilled ? (
             <p className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov bg-egov-success-bg px-4 py-2.5 text-center text-sm font-semibold text-egov-success">
               <span aria-hidden>🪪</span>{" "}
               {t("You already have this — it's in your ID Wallet")}

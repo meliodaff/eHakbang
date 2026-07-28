@@ -3,8 +3,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Service-role Supabase client. Server-only -- bypasses RLS, so it must never
- * be imported from a "use client" file. Used to cache AI-generated journey
- * requirements (see lib/server/journey-requirements.ts).
+ * be imported from a "use client" file. Used where server code needs to read
+ * or write across users regardless of RLS (e.g. profile lookups during auth).
  */
 
 let cached: SupabaseClient | null = null;

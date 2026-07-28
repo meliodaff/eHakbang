@@ -1,4 +1,4 @@
-import type { Journey, JourneyStep, Language } from "./types";
+import type { IdType, Journey, JourneyStep, Language } from "./types";
 import {
   MOCK_JOURNEYS,
   getActiveJourney,
@@ -234,6 +234,50 @@ export async function fetchAutoApplyStatus(
   _input: { journeyId: string; stepNumber: number },
 ): Promise<AutoApplyQueueState | null> {
   return null;
+}
+
+export interface SubmitEnrollmentInput {
+  journeyId: string;
+  stepNumber: number;
+  agencyName: string;
+  /** The membership/ID the citizen is enrolling for (e.g. "philhealth"). */
+  requiredId: IdType;
+}
+
+export interface EnrollmentResult {
+  stepNumber: number;
+  requiredId: IdType;
+  /** Simulated enrollment/reference number for the newly created membership. */
+  referenceNumber: string;
+  /** Always true — there is no live agency environment (PRD FR-22). */
+  simulated: true;
+}
+
+/**
+ * Simulated "apply/enroll first" for a benefit whose agency membership the
+ * citizen doesn't yet hold (see `lib/journey-prerequisites.ts`). There is no
+ * real agency enrollment backend, so this returns a realistic simulated
+ * reference after a short delay and is clearly labeled Simulated in the UI.
+ *
+ * NOTE: this deliberately does NOT write the ID wallet itself — keeping the
+ * client pure. The caller marks the citizen as now holding `requiredId` (via
+ * `setId` from `lib/id-wallet`), which reactively unblocks the dependent
+ * benefit claim.
+ *
+ * TODO(api): POST enrollment to the real agency membership endpoint.
+ */
+export async function submitEnrollment(
+  input: SubmitEnrollmentInput,
+): Promise<EnrollmentResult> {
+  // Brief delay so the UI's "Enrolling…" transition is visible.
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return {
+    stepNumber: input.stepNumber,
+    requiredId: input.requiredId,
+    referenceNumber: `SIM-${input.requiredId.toUpperCase()}-${suffix}`,
+    simulated: true,
+  };
 }
 
 /**

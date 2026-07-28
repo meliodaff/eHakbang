@@ -9,22 +9,75 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
 }));
 
-const { submitAutoApply, fetchAutoApplyStatus } = vi.hoisted(() => ({
+const { submitAutoApply, fetchAutoApplyStatus, submitEnrollment } = vi.hoisted(() => ({
   submitAutoApply: vi.fn(),
   fetchAutoApplyStatus: vi.fn(),
+  submitEnrollment: vi.fn(),
 }));
-vi.mock("@/lib/api-client", () => ({ submitAutoApply, fetchAutoApplyStatus }));
+vi.mock("@/lib/api-client", () => ({
+  submitAutoApply,
+  fetchAutoApplyStatus,
+  submitEnrollment,
+}));
 
 let queued: Set<number>;
 
 /**
+ * Unlocks every benefit currently shown in a locked "action needed" state by
+ * declaring the citizen already holds the required ID -- so the claim's
+ * Auto Apply action appears and completeAllSteps can drive it.
+ */
+async function unlockBlockedBenefits() {
+  let unlockButtons = screen.queryAllByRole("button", {
+    name: /i already have this number/i,
+  });
+  while (unlockButtons.length > 0) {
+    fireEvent.click(unlockButtons[0]);
+    await act(async () => {});
+    unlockButtons = screen.queryAllByRole("button", {
+      name: /i already have this number/i,
+    });
+  }
+}
+
+/**
+ * Passes any indicative eligibility pre-check currently shown by filling the
+ * contingency date (recent, within any window), ticking the contributions
+ * self-check, and clicking "Check eligibility" until none remain.
+ */
+async function passEligibilityGates() {
+  let checkButtons = screen.queryAllByRole("button", {
+    name: /^check eligibility$/i,
+  });
+  while (checkButtons.length > 0) {
+    const dateInputs = screen.queryAllByLabelText(/date of delivery/i);
+    if (dateInputs.length > 0) {
+      fireEvent.change(dateInputs[0], { target: { value: "2026-07-01" } });
+    }
+    for (const box of screen.queryAllByRole("checkbox")) {
+      if (!(box as HTMLInputElement).checked) fireEvent.click(box);
+    }
+    fireEvent.click(checkButtons[0]);
+    await act(async () => {});
+    checkButtons = screen.queryAllByRole("button", {
+      name: /^check eligibility$/i,
+    });
+  }
+}
+
+/**
  * Manually completes every step via StepCard's "Auto Apply" → mocked
- * queue-accepted flow. None of the journeys exercised here have
+ * queue-accepted flow. Unlocks enrollment-blocked benefits and clears their
+ * eligibility gates first. None of the journeys exercised here have
  * `required_fields`, so every step submits directly.
  */
 async function completeAllSteps(total: number) {
+  await unlockBlockedBenefits();
+  await passEligibilityGates();
   for (let i = 0; i < total; i++) {
-    const [applyButton] = screen.getAllByRole("button", { name: "Auto Apply" });
+    const [applyButton] = screen.getAllByRole("button", {
+      name: /^(auto apply|file this claim)$/i,
+    });
     fireEvent.click(applyButton);
     await act(async () => {});
     await act(async () => {
@@ -45,6 +98,13 @@ describe("JourneyScreen", () => {
     queued = new Set();
     submitAutoApply.mockReset();
     fetchAutoApplyStatus.mockReset();
+    submitEnrollment.mockReset();
+    submitEnrollment.mockResolvedValue({
+      stepNumber: 0,
+      requiredId: "philhealth",
+      referenceNumber: "SIM-PHILHEALTH-TEST",
+      simulated: true,
+    });
     submitAutoApply.mockImplementation(async ({ stepNumber }: { stepNumber: number }) => {
       queued.add(stepNumber);
       return {
@@ -66,6 +126,7 @@ describe("JourneyScreen", () => {
       };
     });
     vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-28T00:00:00.000Z"));
   });
 
   afterEach(() => {
@@ -103,6 +164,28 @@ describe("JourneyScreen", () => {
 
     expect(push).toHaveBeenCalledWith(
       `/journey/complete?id=${encodeURIComponent(catalog.id)}`,
+    );
+  });
+
+  it("locks a benefit whose ID is missing, then unlocks it after enrolling", async () => {
+    render(<JourneyScreen eventId="had-a-baby" />);
+    await act(async () => {});
+
+    // With an empty wallet, the prerequisite benefit(s) render locked.
+    expect(screen.getAllByText(/action needed/i).length).toBeGreaterThan(0);
+    const enrollButtons = screen.getAllByRole("button", { name: /register for/i });
+    expect(enrollButtons.length).toBeGreaterThan(0);
+
+    // Declaring an existing number unlocks that claim (Auto Apply appears).
+    const [alreadyHave] = screen.getAllByRole("button", {
+      name: /i already have this number/i,
+    });
+    fireEvent.click(alreadyHave);
+    await act(async () => {});
+
+    // One fewer locked benefit than before.
+    expect(screen.getAllByText(/action needed/i).length).toBe(
+      enrollButtons.length - 1,
     );
   });
 });

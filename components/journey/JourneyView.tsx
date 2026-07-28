@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import type { Journey } from "@/lib/types";
+import type { IdType, Journey } from "@/lib/types";
+import type { PrerequisiteState } from "@/lib/journey-prerequisites";
 import { JourneySummaryHeader } from "./JourneySummaryHeader";
 import { ProgressBar } from "./ProgressBar";
 import { StepCard } from "./StepCard";
@@ -13,17 +14,21 @@ export function JourneyView({
   journey,
   completed,
   walletStepNumbers = [],
+  prerequisiteStates = {},
   afterHeader,
   onComplete,
   onAutoApplied,
   onClaim,
   onSubmit,
   onSubmitFields,
+  onEnrolled,
 }: {
   journey: Journey;
   completed: number[];
   /** Step numbers satisfied by IDs already in the user's wallet. */
   walletStepNumbers?: number[];
+  /** Per-step prerequisite status (blocked/met) keyed by step_number. */
+  prerequisiteStates?: Record<number, PrerequisiteState>;
   /** Optional content rendered directly below the summary header. */
   afterHeader?: ReactNode;
   /** Used only by the bulk AutoApplyBanner flow -- see StepCard's onAutoApplied for the per-step queue. */
@@ -34,6 +39,8 @@ export function JourneyView({
   onSubmit: (stepNumber: number) => void;
   /** Persists required_fields answers submitted from a step's Auto Apply flow. */
   onSubmitFields: (answers: Record<number, Record<string, string>>) => void;
+  /** Records that the citizen enrolled for (or already holds) a required ID. */
+  onEnrolled?: (idType: IdType) => void;
 }) {
   return (
     <main className="flex flex-1 flex-col">
@@ -63,6 +70,8 @@ export function JourneyView({
             eventId={journey.event_id}
             fieldAnswers={journey.field_answers}
             onSubmitFields={onSubmitFields}
+            prerequisiteState={prerequisiteStates[step.step_number] ?? "none"}
+            onEnrolled={onEnrolled}
           />
         ))}
       </div>

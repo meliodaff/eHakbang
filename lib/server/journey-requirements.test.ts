@@ -14,7 +14,13 @@ vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient }));
 const { generateJourneyWithOpenAI } = vi.hoisted(() => ({
   generateJourneyWithOpenAI: vi.fn(),
 }));
-vi.mock("./openai-journey", () => ({ generateJourneyWithOpenAI }));
+vi.mock("./openai-journey", () => ({
+  generateJourneyWithOpenAI,
+  // Pass-through inference stubs; decoration behaviour is covered by
+  // openai-journey.test.ts and journey-eligibility.test.ts.
+  inferFulfillsId: () => undefined,
+  inferPrerequisite: () => null,
+}));
 
 import { getOrRegenerateJourney } from "./journey-requirements";
 

@@ -3,7 +3,8 @@ import type { Journey, JourneyStep, Language } from "@/lib/types";
 import { getLifeEventById } from "@/lib/events";
 import { getJourneyByEventId } from "@/lib/event-journeys";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { generateJourneyWithOpenAI } from "./openai-journey";
+import { generateJourneyWithOpenAI, inferFulfillsId, inferPrerequisite } from "./openai-journey";
+import { inferEligibility } from "@/lib/journey-eligibility";
 
 /**
  * Cache-or-regenerate layer for AI-generated journey requirements. Staleness
@@ -38,6 +39,23 @@ function journeyId(eventId: string): string {
   return `ehakbang:journey:event:${eventId}`;
 }
 
+/**
+ * Recompute derived, relational step fields at read time so cached rows (and
+ * freshly generated ones) always reflect the latest logic — without waiting
+ * for the 24h staleness window or wiping the cache. `fulfills_id` is
+ * recomputed unconditionally (older cached rows wrongly tagged benefit claims,
+ * which made the ID wallet auto-complete them); `prerequisite`/`eligibility`
+ * are kept if already present, otherwise inferred.
+ */
+function decorateSteps(steps: JourneyStep[]): JourneyStep[] {
+  return steps.map((step) => ({
+    ...step,
+    fulfills_id: inferFulfillsId(step),
+    prerequisite: step.prerequisite ?? inferPrerequisite(step),
+    eligibility: step.eligibility ?? inferEligibility(step),
+  }));
+}
+
 function rowToJourney(row: JourneyRequirementsRow, language: Language): Journey {
   return {
     id: journeyId(row.event_id),
@@ -48,7 +66,7 @@ function rowToJourney(row: JourneyRequirementsRow, language: Language): Journey 
     total_steps: row.total_steps,
     record_updates: row.record_updates,
     benefit_claims: row.benefit_claims,
-    steps: row.steps,
+    steps: decorateSteps(row.steps),
     status: "active",
     language,
     created_at: row.updated_at,

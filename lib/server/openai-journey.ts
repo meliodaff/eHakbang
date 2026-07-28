@@ -1,17 +1,20 @@
 import "server-only";
 import OpenAI from "openai";
-import type { IdType, JourneyStep, Language } from "@/lib/types";
+import type { IdType, JourneyStep, Language, StepPrerequisite } from "@/lib/types";
 
 /**
  * Generates journey requirements with OpenAI's Responses API + web_search
  * tool, so documents/fees stay current instead of hand-maintained. Output is
  * constrained to a strict JSON schema mirroring `JourneyStep` (minus fields
- * the app assigns itself: `step_number`, `fulfills_id`, `egov_url`).
+ * the app assigns itself: `step_number`, `fulfills_id`, `prerequisite`,
+ * `egov_url`).
  */
 
 export interface GeneratedJourney {
   summary: string;
-  steps: Array<Omit<JourneyStep, "step_number" | "fulfills_id" | "egov_url">>;
+  steps: Array<
+    Omit<JourneyStep, "step_number" | "fulfills_id" | "prerequisite" | "egov_url">
+  >;
   model: string;
 }
 
@@ -170,6 +173,7 @@ export async function generateJourneyWithOpenAI(input: {
     steps: parsed.steps.map((step) => ({
       ...step,
       fulfills_id: inferFulfillsId(step),
+      prerequisite: inferPrerequisite(step),
     })),
     model,
   };
@@ -179,9 +183,14 @@ export async function generateJourneyWithOpenAI(input: {
  * The model doesn't reliably assign `fulfills_id` across regenerations, so
  * it's inferred afterward from the agency + step title instead.
  */
-function inferFulfillsId(
-  step: Pick<JourneyStep, "agency_code" | "step_title">,
+export function inferFulfillsId(
+  step: Pick<JourneyStep, "step_type" | "agency_code" | "step_title">,
 ): IdType | undefined {
+  // Only a record update / registration *obtains* an ID. A benefit claim that
+  // merely mentions the agency (e.g. "File for SSS Maternity Benefit") must
+  // never be treated as fulfilling that ID, or the ID wallet would wrongly
+  // auto-complete the claim.
+  if (step.step_type !== "record_update") return undefined;
   const title = step.step_title.toLowerCase();
   const agency = step.agency_code.toUpperCase();
   if (agency === "BIR" && /\btin\b/.test(title)) return "tin";
@@ -190,4 +199,31 @@ function inferFulfillsId(
   if (agency === "PAGIBIG" && /pag-ibig/.test(title)) return "pagibig";
   if (agency === "PHILSYS" && /national id/.test(title)) return "philsys";
   return undefined;
+}
+
+/**
+ * The model doesn't reliably flag which benefit claims need a prior agency
+ * membership, so it's inferred afterward (like {@link inferFulfillsId}). Only
+ * `benefit_claim` steps get a prerequisite; the type distinguishes claims that
+ * are unblocked by simply enrolling (`membership`) from those that also need
+ * prior contributions (`contribution`, e.g. SSS/GSIS cash benefits). Falls
+ * back to `null` (no prerequisite) when nothing confidently matches.
+ */
+export function inferPrerequisite(
+  step: Pick<JourneyStep, "step_type" | "agency_code" | "step_title">,
+): StepPrerequisite | null {
+  if (step.step_type !== "benefit_claim") return null;
+  const agency = step.agency_code.toUpperCase();
+
+  if (agency === "PHILHEALTH") {
+    return { required_id: "philhealth", prerequisite_type: "membership" };
+  }
+  if (agency === "SSS") {
+    // SSS cash benefits (maternity, sickness, etc.) depend on posted contributions.
+    return { required_id: "sss", prerequisite_type: "contribution" };
+  }
+  if (agency === "PAGIBIG") {
+    return { required_id: "pagibig", prerequisite_type: "membership" };
+  }
+  return null;
 }

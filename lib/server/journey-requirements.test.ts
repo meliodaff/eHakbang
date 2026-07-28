@@ -22,7 +22,8 @@ vi.mock("./openai-journey", () => ({
   inferPrerequisite: () => null,
 }));
 
-import { getOrRegenerateJourney } from "./journey-requirements";
+import { getOrRegenerateCustomJourney, getOrRegenerateJourney } from "./journey-requirements";
+import { customEventId } from "@/lib/custom-event";
 
 function makeSupabaseMock(opts: {
   existing?: unknown | null;
@@ -35,13 +36,14 @@ function makeSupabaseMock(opts: {
     maybeSingle: vi.fn(async () => ({ data: opts.existing ?? null, error: null })),
     single: vi.fn(async () => opts.upsertResult ?? { data: null, error: null }),
   };
-  return { from: vi.fn(() => builder) };
+  return { from: vi.fn(() => builder), builder };
 }
 
 const NOW = new Date("2026-07-22T12:00:00.000Z");
 
 const AI_GENERATED = {
   summary: "AI summary",
+  title: "AI Title",
   model: "gpt-4.1",
   steps: [
     {
@@ -182,5 +184,100 @@ describe("getOrRegenerateJourney", () => {
     await expect(
       getOrRegenerateJourney({ eventId: "not-a-real-event" }),
     ).rejects.toThrow();
+  });
+});
+
+describe("getOrRegenerateCustomJourney", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    generateJourneyWithOpenAI.mockReset();
+    getSupabaseServerClient.mockReset();
+  });
+
+  it("uses the canonical slug, not the raw text, as the cache key when provided", async () => {
+    const client = makeSupabaseMock({ existing: null });
+    getSupabaseServerClient.mockReturnValue(client);
+    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+
+    await getOrRegenerateCustomJourney({
+      text: "I got accepted as a PH rep for a tournament in the US",
+      slug: "representing-ph-international-tournament",
+    });
+
+    const expectedId = customEventId("representing-ph-international-tournament");
+    expect(client.builder.eq).toHaveBeenCalledWith("event_id", expectedId);
+  });
+
+  it("stores the AI-generated title as the journey's life_event label", async () => {
+    const client = makeSupabaseMock({
+      existing: null,
+      upsertResult: {
+        data: {
+          event_id: customEventId("representing-ph-international-tournament"),
+          language: "en",
+          emoji: "📋",
+          life_event: AI_GENERATED.title,
+          summary: AI_GENERATED.summary,
+          steps: AI_GENERATED.steps.map((s, i) => ({ ...s, step_number: i + 1 })),
+          total_steps: 1,
+          record_updates: 0,
+          benefit_claims: 1,
+          updated_at: NOW.toISOString(),
+        },
+        error: null,
+      },
+    });
+    getSupabaseServerClient.mockReturnValue(client);
+    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+
+    const result = await getOrRegenerateCustomJourney({
+      text: "I got accepted as a PH rep for a tournament in the US",
+      slug: "representing-ph-international-tournament",
+    });
+
+    expect(client.builder.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ life_event: AI_GENERATED.title }),
+      { onConflict: "event_id,language" },
+    );
+    expect(result.journey.life_event).toBe(AI_GENERATED.title);
+  });
+
+  it("falls back to the truncated raw text when the AI omits a title", async () => {
+    const client = makeSupabaseMock({ existing: null });
+    getSupabaseServerClient.mockReturnValue(client);
+    generateJourneyWithOpenAI.mockResolvedValue({ ...AI_GENERATED, title: "" });
+
+    await getOrRegenerateCustomJourney({ text: "I am adopting a rescue dog" });
+
+    expect(client.builder.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ life_event: "I am adopting a rescue dog" }),
+      { onConflict: "event_id,language" },
+    );
+  });
+
+  it("falls back to hashing the raw text when no slug is given", async () => {
+    const client = makeSupabaseMock({ existing: null });
+    getSupabaseServerClient.mockReturnValue(client);
+    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+
+    await getOrRegenerateCustomJourney({ text: "I am adopting a rescue dog" });
+
+    const expectedId = customEventId("I am adopting a rescue dog");
+    expect(client.builder.eq).toHaveBeenCalledWith("event_id", expectedId);
+  });
+
+  it("returns an empty fallback journey (not a throw) when generation fails", async () => {
+    const client = makeSupabaseMock({ existing: null });
+    getSupabaseServerClient.mockReturnValue(client);
+    generateJourneyWithOpenAI.mockRejectedValue(new Error("OpenAI error"));
+
+    const result = await getOrRegenerateCustomJourney({
+      text: "I am adopting a rescue dog",
+    });
+
+    expect(result.source).toBe("seed");
+    expect(result.journey.total_steps).toBe(0);
+    expect(result.journey.life_event).toBe("I am adopting a rescue dog");
   });
 });

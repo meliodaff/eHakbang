@@ -12,6 +12,8 @@ import type { IdType, JourneyStep, Language, StepPrerequisite } from "@/lib/type
 
 export interface GeneratedJourney {
   summary: string;
+  /** Short (<=6 word) plain-language title for the life event, e.g. "Representing PH at a US Tournament". */
+  title: string;
   steps: Array<
     Omit<JourneyStep, "step_number" | "fulfills_id" | "prerequisite" | "egov_url">
   >;
@@ -65,6 +67,7 @@ const JOURNEY_SCHEMA = {
   type: "object",
   properties: {
     summary: { type: "string" },
+    title: { type: "string" },
     steps: {
       type: "array",
       items: {
@@ -101,18 +104,18 @@ const JOURNEY_SCHEMA = {
       },
     },
   },
-  required: ["summary", "steps"],
+  required: ["summary", "title", "steps"],
   additionalProperties: false,
 } as const;
 
 const SYSTEM_PROMPT = `You are eHakbang's requirements assistant for Filipino citizens navigating government
 agencies. Given a life event, use web search to find the current, accurate list of steps a citizen
 must take across Philippine government agencies (SSS, PhilHealth, Pag-IBIG, BIR, PSA, DOLE, GSIS,
-DSWD, LGU/barangay, COMELEC, etc.).
+DSWD, DFA, LGU/barangay, COMELEC, etc.).
 
 Rules:
 - Prioritize official .gov.ph sources (e.g. sss.gov.ph, philhealth.gov.ph, pagibigfund.gov.ph,
-  bir.gov.ph, psa.gov.ph, dole.gov.ph). Cross-check when sources disagree.
+  bir.gov.ph, psa.gov.ph, dole.gov.ph, dfa.gov.ph). Cross-check when sources disagree.
 - Never invent a peso amount, fee, or document requirement you did not find via search. If a fee
   applies, set "fee" with the amount/how to pay found on an official source and cite it in
   "official_source_url". If a step has no fee, set "fee" to null.
@@ -125,10 +128,20 @@ Rules:
   uploaded evidence document is sufficient on its own, which is true for most steps.
 - Keep "reason" a one-sentence, plain-language explanation. Keep "important_note" for deadlines,
   eligibility caveats, or warnings -- null when there are none.
+- If the life event involves international travel (competing, working, studying, or representing
+  the Philippines abroad, etc.), include a DFA step to apply for or renew a Philippine passport
+  when the citizen would plausibly need one. A destination country's entry visa is issued by that
+  country's own embassy/consulate, not a Philippine government agency -- never invent it as a step,
+  but when a visa is plausibly required, say so in the passport step's "important_note" (e.g. "You
+  will also need a visa from the destination country's embassy; this is arranged separately and is
+  not a Philippine government process").
 - Write every text field (reason, important_note, documents_required, estimated_time,
-  agency_name, step_title) as plain prose. Never include markdown formatting, bracketed
+  agency_name, step_title, title) as plain prose. Never include markdown formatting, bracketed
   citations, or raw URLs in these fields -- the only field a URL belongs in is
   "fee.official_source_url".
+- "title" is a short (6 words or fewer) plain-language label for the life event itself, written
+  like a headline, e.g. "Representing PH at a US Tournament" or "Starting a New Business" -- not a
+  restatement of any single step.
 - Order steps in the sequence a citizen should realistically complete them.
 - Output must satisfy the provided JSON schema exactly.`;
 
@@ -165,11 +178,13 @@ export async function generateJourneyWithOpenAI(input: {
 
   const parsed = JSON.parse(response.output_text) as {
     summary: string;
+    title: string;
     steps: Array<Omit<JourneyStep, "step_number" | "fulfills_id" | "egov_url">>;
   };
 
   return {
     summary: parsed.summary,
+    title: parsed.title,
     steps: parsed.steps.map((step) => ({
       ...step,
       fulfills_id: inferFulfillsId(step),

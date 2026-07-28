@@ -19,6 +19,7 @@ import {
   getEligibilityRequirements,
   checkEligibility,
 } from "@/lib/journey-eligibility";
+import { resolveOfficialService, resolveOfficialUrl } from "@/lib/egov-catalog";
 import { StepTypeBadge } from "./StepTypeBadge";
 import { DisclaimerBox } from "./DisclaimerBox";
 import { AskAboutStep } from "./AskAboutStep";
@@ -118,6 +119,8 @@ export function StepCard({
   const submittedLabel = isBenefit
     ? t("Claim filed — awaiting agency decision")
     : t("Submitted — awaiting agency review");
+  // Resolved official destination for the "Go to Official Service" CTA.
+  const official = resolveOfficialService(step);
   const [queueState, setQueueState] = useState<QueueUiState>({ kind: "checking" });
   const [enrollState, setEnrollState] = useState<EnrollUiState>({ kind: "idle" });
   const [simulating, setSimulating] = useState(false);
@@ -398,15 +401,28 @@ export function StepCard({
       )}
 
       <div className="mt-4 flex flex-col gap-2">
-        <a
-          href={step.egov_url ?? "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov border border-egov-blue px-4 py-2.5 text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
-        >
-          {t("Go to Official Service")}
-          <span aria-hidden>↗</span>
-        </a>
+        {official.kind === "link" ? (
+          <a
+            href={official.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-11 flex-wrap items-center justify-center gap-x-1.5 gap-y-0 rounded-egov border border-egov-blue px-4 py-2.5 text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              {t("Go to Official Service")}
+              <span aria-hidden>↗</span>
+            </span>
+            {official.domain && (
+              <span className="text-xs font-normal text-muted">{official.domain}</span>
+            )}
+          </a>
+        ) : (
+          <p className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov bg-background px-4 py-2.5 text-center text-sm text-muted">
+            <span aria-hidden>🏢</span>
+            {t("Handled outside government online services — coordinate directly with")}{" "}
+            {t(step.agency_name)}.
+          </p>
+        )}
 
         {completed ? (
           notApplicable ? (
@@ -561,7 +577,7 @@ export function StepCard({
 
             {(eligState.kind === "lapsed" || eligState.kind === "not-yet") && (
               <a
-                href={step.egov_url ?? "#"}
+                href={resolveOfficialUrl(step)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-semibold text-egov-blue underline underline-offset-2"

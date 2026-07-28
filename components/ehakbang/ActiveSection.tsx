@@ -6,6 +6,7 @@ import { useJourneys } from "@/lib/journey-store";
 import {
   ListIcon,
 } from "@/components/egov/ServiceIcons";
+import LivenessMockPage from "@/app/(app)/dev/liveness-mock/page";
 
 const DocIcon = () => (
   <svg
@@ -98,21 +99,7 @@ export function EhakbangActiveSection() {
               <span className="absolute -right-2 -top-2 h-8 w-8 rounded-full bg-egov-yellow/60" />
             </div>
           </Link>
-
-          <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
-            {active.steps.map((s) => (
-              <span
-                key={s.step_number}
-                className={cn(
-                  "h-1.5 rounded-full",
-                  active.completed_step_numbers.includes(s.step_number)
-                    ? "w-5 bg-egov-blue"
-                    : "w-1.5 bg-egov-blue-100",
-                )}
-              />
-            ))}
-          </div>
-
+          
           {awaiting.length > 0 && (
             <Link
               href={`/track?journey=${encodeURIComponent(active.id)}`}
@@ -133,7 +120,7 @@ export function EhakbangActiveSection() {
       <div className="mt-4 px-5">
         <div className="flex items-center justify-between rounded-egov border border-border bg-surface p-4 shadow-sm">
           {/* Column 1: Active Journeys */}
-          <div className="flex flex-1 items-center justify-center gap-3">
+          <Link href="/journeys" className="flex flex-1 items-center justify-center gap-3">
             <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-egov-blue-050 text-egov-blue [&>svg]:h-5 [&>svg]:w-5">
               <ListIcon />
             </span>
@@ -145,7 +132,7 @@ export function EhakbangActiveSection() {
                 My Journeys
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Divider */}
           <div className="h-8 w-px bg-border shrink-0" />
@@ -169,7 +156,7 @@ export function EhakbangActiveSection() {
           <div className="h-8 w-px bg-border shrink-0" />
 
           {/* Column 3: Benefit Claims */}
-          <div className="flex flex-1 items-center justify-center gap-3">
+          <Link href="/journeys" className="flex flex-1 items-center justify-center gap-3">
             <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
               <HeartIcon />
             </span>
@@ -181,7 +168,7 @@ export function EhakbangActiveSection() {
                 Benefits
               </p>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
     </>

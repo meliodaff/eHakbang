@@ -512,4 +512,44 @@ describe("StepCard", () => {
     await act(async () => {});
     expect(screen.getByRole("button", { name: /file this claim/i })).toBeInTheDocument();
   });
+
+  it("links the Official Service CTA to the resolved agency site with a domain cue", async () => {
+    render(
+      <StepCard
+        step={recordStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+      />,
+    );
+    await act(async () => {});
+    const cta = screen.getByRole("link", { name: /go to official service/i });
+    expect(cta).toHaveAttribute("href", "https://psa.gov.ph/");
+    expect(cta).toHaveAttribute("target", "_blank");
+    expect(cta).toHaveTextContent("psa.gov.ph");
+  });
+
+  it("shows a non-government hint (no link) for private/employer steps", async () => {
+    render(
+      <StepCard
+        step={{
+          ...recordStep,
+          agency_name: "Banks and Employer (HR)",
+          agency_code: "BANKS",
+        }}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+      />,
+    );
+    await act(async () => {});
+    expect(
+      screen.queryByRole("link", { name: /go to official service/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/handled outside government online services/i),
+    ).toBeInTheDocument();
+  });
 });

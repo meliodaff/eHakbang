@@ -98,6 +98,8 @@ const FIL: Record<string, string> = {
   "Documents needed": "Mga kailangang dokumento",
   "Estimated time:": "Tinatayang oras:",
   "Go to Official Service": "Pumunta sa Opisyal na Serbisyo",
+  "Handled outside government online services — coordinate directly with":
+    "Hinahawakan ito sa labas ng online na serbisyo ng gobyerno — direktang makipag-ugnayan sa",
   "Auto Apply": "I-auto Apply",
   "Submitted — awaiting agency review":
     "Naipasa na — hinihintay ang pagsusuri ng ahensya",

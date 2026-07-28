@@ -49,7 +49,6 @@ describe("BottomTabBar", () => {
     expect(
       screen.getByRole("link", { name: /my journeys/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /about/i })).toBeInTheDocument();
   });
 
   it("marks My Journeys active on the /journeys route", () => {

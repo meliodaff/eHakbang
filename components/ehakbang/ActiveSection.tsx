@@ -3,14 +3,43 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { useJourneys } from "@/lib/journey-store";
-import { ServiceTile } from "@/components/egov/ServiceTile";
 import {
   ListIcon,
-  InfoIcon,
-  IdCardIcon,
-  JobsIcon,
-  HealthIcon,
 } from "@/components/egov/ServiceIcons";
+
+const DocIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-5 w-5"
+    aria-hidden="true"
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+);
+
+const HeartIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-5 w-5"
+    aria-hidden="true"
+  >
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+  </svg>
+);
 
 /**
  * Store-backed home section: quick actions, the active-journey banner (only
@@ -40,15 +69,6 @@ export function EhakbangActiveSection() {
 
   return (
     <>
-      {/* Quick actions */}
-      <div className="mt-4">
-        <div className="flex touch-pan-x gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <ServiceTile icon={<ListIcon />} label="My Journeys" href="/journeys" />
-          <ServiceTile icon={<IdCardIcon />} label="My IDs" href="/wallet" />
-          <ServiceTile icon={<InfoIcon />} label="About" href="/about" />
-        </div>
-      </div>
-
       {/* Active journey banner */}
       {active && (
         <div className="mt-4 px-5">
@@ -107,41 +127,61 @@ export function EhakbangActiveSection() {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="mt-5 grid grid-cols-2 gap-3 px-5">
-        <div className="row-span-2 flex flex-col rounded-egov-lg bg-egov-blue-050 p-4">
-          <span aria-hidden className="text-egov-blue">
-            <ListIcon />
-          </span>
-          <p className="mt-auto text-3xl font-bold text-foreground">
-            {journeys.length}
-          </p>
-          <p className="text-xs text-muted">My Journeys</p>
-          <p className="text-[11px] text-muted">{activeCount} active</p>
-        </div>
 
-        <div className="flex items-center justify-between rounded-egov-lg bg-egov-record-bg p-4">
-          <div>
-            <p className="text-sm font-bold text-foreground">Record Updates</p>
-            <p className="mt-1 text-xl font-bold text-egov-record">
-              {totalRecordUpdates}
-            </p>
-          </div>
-          <span aria-hidden className="text-egov-record">
-            <JobsIcon />
-          </span>
-        </div>
 
-        <div className="flex items-center justify-between rounded-egov-lg bg-egov-success-bg p-4">
-          <div>
-            <p className="text-sm font-bold text-foreground">Benefit Claims</p>
-            <p className="mt-1 text-xl font-bold text-egov-success">
-              {totalBenefitClaims}
-            </p>
+      {/* Stats Section */}
+      <div className="mt-4 px-5">
+        <div className="flex items-center justify-between rounded-egov border border-border bg-surface p-4 shadow-sm">
+          {/* Column 1: Active Journeys */}
+          <div className="flex flex-1 items-center justify-center gap-3">
+            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-egov-blue-050 text-egov-blue [&>svg]:h-5 [&>svg]:w-5">
+              <ListIcon />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground leading-tight">
+                {activeCount} Active
+              </p>
+              <p className="text-[10px] text-muted leading-tight font-medium">
+                My Journeys
+              </p>
+            </div>
           </div>
-          <span aria-hidden className="text-egov-success">
-            <HealthIcon />
-          </span>
+
+          {/* Divider */}
+          <div className="h-8 w-px bg-border shrink-0" />
+
+          {/* Column 2: Record Updates */}
+          <div className="flex flex-1 items-center justify-center gap-3">
+            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+              <DocIcon />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground leading-tight">
+                {totalRecordUpdates} Updates
+              </p>
+              <p className="text-[10px] text-muted leading-tight font-medium">
+                Records
+              </p>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="h-8 w-px bg-border shrink-0" />
+
+          {/* Column 3: Benefit Claims */}
+          <div className="flex flex-1 items-center justify-center gap-3">
+            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <HeartIcon />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground leading-tight">
+                {totalBenefitClaims} Claims
+              </p>
+              <p className="text-[10px] text-muted leading-tight font-medium">
+                Benefits
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </>

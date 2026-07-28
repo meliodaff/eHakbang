@@ -157,20 +157,13 @@ export function BottomTabBar() {
             icon={<HomeIcon />}
             active={false}
           />
+          <Fab label="New" />
           <TabLink
             href="/journeys"
             label="My Journeys"
             icon={<ListIcon />}
             active={pathname.startsWith("/journeys")}
           />
-          <Fab label="New" />
-          <TabLink
-            href="/about"
-            label="About"
-            icon={<InfoIcon />}
-            active={pathname.startsWith("/about")}
-          />
-          <TabStub label="Settings" icon={<SettingsIcon />} />
         </>
       )}
     </nav>

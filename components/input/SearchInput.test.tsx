@@ -91,7 +91,7 @@ describe("SearchInput", () => {
     );
   });
 
-  it("blocks submission and shows an error when the text isn't a real life event", async () => {
+  it("blocks submission and shows a dialog when the text isn't a real life event", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ eventId: null, isLifeEvent: false }),
@@ -103,8 +103,11 @@ describe("SearchInput", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /generate my journey/i }),
     );
-    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
     expect(push).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /^ok$/i }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("falls back to a custom journey when classification is unavailable", async () => {

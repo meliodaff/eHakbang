@@ -6,6 +6,7 @@ import { LIFE_EVENTS, getLifeEventById } from "@/lib/events";
 import type { LifeEvent } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { navigateToEvent } from "@/lib/navigate-to-event";
+import { InvalidLifeEventDialog } from "./InvalidLifeEventDialog";
 
 const MIN_CHARS_FOR_SUGGESTIONS = 3;
 const MIN_CHARS = 3;
@@ -38,6 +39,7 @@ export function SearchInput() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invalidEventMessage, setInvalidEventMessage] = useState<string | null>(null);
   const suggestions = matchEvents(query);
 
   function selectSuggestion(event: LifeEvent) {
@@ -53,6 +55,7 @@ export function SearchInput() {
       return;
     }
     setError(null);
+    setInvalidEventMessage(null);
     setLoading(true);
     // Canonical, wording-independent slug for this situation (from
     // classification) — lets the server reuse a cached journey for a
@@ -82,7 +85,7 @@ export function SearchInput() {
         // an ambiguous description or a service hiccup never blocks a
         // legitimate citizen.
         if (data.isLifeEvent === false) {
-          setError(
+          setInvalidEventMessage(
             "Parang hindi ito naglalarawan ng tunay na life event. Subukan ulit gamit ang mas malinaw na paglalarawan (hal. bagong kasal, nawalan ng trabaho).",
           );
           return;
@@ -177,6 +180,13 @@ export function SearchInput() {
       >
         {loading ? "Ginagawa…" : "Generate My Journey"}
       </button>
+
+      {invalidEventMessage && (
+        <InvalidLifeEventDialog
+          message={invalidEventMessage}
+          onDismiss={() => setInvalidEventMessage(null)}
+        />
+      )}
     </form>
   );
 }

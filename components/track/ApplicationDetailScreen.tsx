@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useJourneys, markStepsDone } from "@/lib/journey-store";
+import { useJourneys, markStepsApproved } from "@/lib/journey-store";
 import { simulateAgencyApproval } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
 import { useT } from "@/lib/i18n";
@@ -36,7 +36,7 @@ export function ApplicationDetailScreen({
     try {
       // Local demo stand-in for this agency responding (no real backend).
       await simulateAgencyApproval({ journeyId: journey.id });
-      const updated = markStepsDone(journey, [step.step_number]);
+      const updated = markStepsApproved(journey, [step.step_number]);
       // Whole journey done -> celebration screen; otherwise back to the list.
       if (updated.status === "completed") {
         router.push(`/journey/complete?id=${encodeURIComponent(journey.id)}`);

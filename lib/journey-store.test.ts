@@ -5,6 +5,7 @@ import {
   getAllJourneys,
   getStoredJourney,
   markStepAutoApplied,
+  markStepsApproved,
   markStepsClaimed,
   markStepsDone,
   markStepsPaid,
@@ -122,6 +123,23 @@ describe("journey-store persistence", () => {
   it("markStepAutoApplied folds in wallet-satisfied steps like completeStep", () => {
     const catalog = getJourneyByEventId("first-job")!;
     const updated = markStepAutoApplied({ ...catalog }, 1, [2, 4]);
+    expect(updated.completed_step_numbers.sort()).toEqual([1, 2, 4]);
+    expect(updated.auto_applied_step_numbers).toEqual([1]);
+  });
+
+  it("markStepsApproved completes multiple submitted steps and records them as auto-applied", () => {
+    const catalog = getJourneyByEventId("first-job")!;
+    const updated = markStepsApproved({ ...catalog }, [1, 3]);
+    expect(updated.completed_step_numbers.sort()).toEqual([1, 3]);
+    expect(updated.auto_applied_step_numbers.sort()).toEqual([1, 3]);
+    expect(updated.claimed_step_numbers).toEqual([]);
+  });
+
+  it("markStepsApproved keeps alsoComplete steps out of auto_applied_step_numbers", () => {
+    const catalog = getJourneyByEventId("first-job")!;
+    // Steps 2/4 are folded in as wallet-satisfied (not actually submitted),
+    // so they shouldn't get a "claim your document" prompt.
+    const updated = markStepsApproved({ ...catalog }, [1], [2, 4]);
     expect(updated.completed_step_numbers.sort()).toEqual([1, 2, 4]);
     expect(updated.auto_applied_step_numbers).toEqual([1]);
   });

@@ -8,11 +8,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
 }));
 
-const { useJourneys, markStepsDone } = vi.hoisted(() => ({
+const { useJourneys, markStepsApproved } = vi.hoisted(() => ({
   useJourneys: vi.fn(),
-  markStepsDone: vi.fn(),
+  markStepsApproved: vi.fn(),
 }));
-vi.mock("@/lib/journey-store", () => ({ useJourneys, markStepsDone }));
+vi.mock("@/lib/journey-store", () => ({ useJourneys, markStepsApproved }));
 
 const { simulateAgencyApproval } = vi.hoisted(() => ({
   simulateAgencyApproval: vi.fn(),
@@ -64,7 +64,7 @@ function journey(overrides: Partial<Journey>): Journey {
 describe("TrackScreen", () => {
   beforeEach(() => {
     push.mockReset();
-    markStepsDone.mockReset();
+    markStepsApproved.mockReset();
     simulateAgencyApproval.mockReset();
   });
 
@@ -118,7 +118,7 @@ describe("TrackScreen", () => {
     const married = journey({ id: "j1", life_event: "Got Married" });
     useJourneys.mockReturnValue({ journeys: [married], ready: true });
     simulateAgencyApproval.mockResolvedValue({ acceptedStepNumbers: [] });
-    markStepsDone.mockImplementation((j: Journey) => ({ ...j, status: "active" }));
+    markStepsApproved.mockImplementation((j: Journey) => ({ ...j, status: "active" }));
 
     render(<TrackScreen journeyId="j1" />);
 
@@ -126,15 +126,18 @@ describe("TrackScreen", () => {
       screen.getByRole("button", { name: /demo: simulate all agencies' approval/i }),
     );
 
-    await waitFor(() => expect(markStepsDone).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(markStepsApproved).toHaveBeenCalledTimes(1));
     expect(simulateAgencyApproval).toHaveBeenCalledWith({ journeyId: "j1" });
+    // Approved steps are recorded as auto-applied so the dashboard's To Do
+    // section prompts the citizen to claim the resulting document.
+    expect(markStepsApproved).toHaveBeenCalledWith(married, [1]);
   });
 
   it("navigates to the completion screen when the per-journey simulate button finishes the journey", async () => {
     const married = journey({ id: "j1", life_event: "Got Married" });
     useJourneys.mockReturnValue({ journeys: [married], ready: true });
     simulateAgencyApproval.mockResolvedValue({ acceptedStepNumbers: [] });
-    markStepsDone.mockImplementation((j: Journey) => ({ ...j, status: "completed" }));
+    markStepsApproved.mockImplementation((j: Journey) => ({ ...j, status: "completed" }));
 
     render(<TrackScreen journeyId="j1" />);
 

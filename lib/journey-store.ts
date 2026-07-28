@@ -267,6 +267,32 @@ export function markStepAutoApplied(
 }
 
 /**
+ * Mark previously-submitted steps as approved by their agency, persisting
+ * the journey on first engagement. Like {@link markStepAutoApplied}, but for
+ * several steps at once -- used when the approval is discovered via the
+ * "Demo: Simulate agency approval" controls (Track/ApplicationDetailScreen)
+ * rather than StepCard's own auto-apply queue poll. An approved application
+ * produces a physical document the citizen still needs to claim at the
+ * agency office, same as the queue-polled path, so these steps are also
+ * recorded in auto_applied_step_numbers (drives the dashboard's To Do
+ * section). `alsoComplete` folds in steps resolved without a submission
+ * (e.g. wallet-satisfied) that shouldn't get a claim prompt.
+ */
+export function markStepsApproved(
+  base: Journey,
+  stepNumbers: number[],
+  alsoComplete: number[] = [],
+): Journey {
+  return persist(
+    base,
+    [...existingCompletions(base), ...alsoComplete, ...stepNumbers],
+    undefined,
+    undefined,
+    [...existingAutoApplied(base), ...stepNumbers],
+  );
+}
+
+/**
  * Mark steps' applications as submitted to their agencies and awaiting the
  * agency's response, persisting the journey on first engagement. These steps
  * are NOT completed -- they stay in a "waiting for the agencies to respond"

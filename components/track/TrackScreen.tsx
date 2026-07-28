@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Journey } from "@/lib/types";
-import { useJourneys, markStepsDone } from "@/lib/journey-store";
+import { useJourneys, markStepsApproved } from "@/lib/journey-store";
 import { simulateAgencyApproval } from "@/lib/api-client";
 import { useT } from "@/lib/i18n";
 
@@ -37,7 +37,7 @@ export function TrackScreen({ journeyId }: { journeyId?: string }) {
     setBusyId(journey.id);
     try {
       await simulateAgencyApproval({ journeyId: journey.id });
-      const updated = markStepsDone(journey, awaiting);
+      const updated = markStepsApproved(journey, awaiting);
       if (updated.status === "completed") {
         router.push(`/journey/complete?id=${encodeURIComponent(journey.id)}`);
       }

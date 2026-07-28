@@ -14,6 +14,7 @@ import {
   completeStep,
   markStepsDone,
   markStepAutoApplied,
+  markStepsApproved,
   markStepsClaimed,
   markStepsSubmitted,
   setFieldAnswers,
@@ -215,12 +216,17 @@ export function JourneyScreen({
     setShowApplyModal(true);
   }
 
-  // Called once the modal has "submitted" every step: mark all processes done,
-  // then route to the completion summary.
+  // Called once the modal has "submitted" every step: mark them approved
+  // (they produce a physical document to claim, like any other auto-applied
+  // step -- see the dashboard's To Do section), folding in the wallet/
+  // not-applicable steps as plain completions since those were never
+  // actually submitted anywhere. Then route to the completion summary.
   function handleApplyAllFinished() {
     if (!journey) return;
-    const allSteps = journey.steps.map((s) => s.step_number);
-    const updated = markStepsDone(journey, [...allSteps, ...autoResolvedStepNumbers]);
+    const appliedSteps = journey.steps
+      .map((s) => s.step_number)
+      .filter((n) => !autoResolvedStepNumbers.includes(n));
+    const updated = markStepsApproved(journey, appliedSteps, autoResolvedStepNumbers);
     setJourney(updated);
     setShowApplyModal(false);
     router.push(`/journey/complete?id=${encodeURIComponent(updated.id)}`);

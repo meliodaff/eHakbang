@@ -149,6 +149,11 @@ Rules:
   an entry in "required_fields" instead (field_key, label, field_type, hint, required). Do not
   duplicate an item between the two lists. Leave "required_fields" as an empty array when the
   uploaded evidence document is sufficient on its own, which is true for most steps.
+- The citizen has already uploaded the primary evidence document that proves this life event
+  happened (e.g. PSA marriage certificate for "Got Married", PSA birth certificate for "Had a
+  Baby", death certificate for "Death in the Family"). Do NOT list that same evidence document
+  in any step's "documents_required" -- the system already has it. Only list ADDITIONAL documents
+  the citizen will need beyond the one they already provided.
 - Keep "reason" a one-sentence, plain-language explanation. Keep "important_note" for deadlines,
   eligibility caveats, or warnings -- null when there are none.
 - If the life event involves international travel (competing, working, studying, or representing

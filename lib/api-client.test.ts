@@ -7,6 +7,7 @@ import {
   fetchPaymentStatus,
   submitAutoApply,
   fetchAutoApplyStatus,
+  submitEnrollment,
   askAboutStep,
 } from "./api-client";
 import { MOCK_JOURNEYS } from "./mock-data";
@@ -191,6 +192,30 @@ describe("api-client (Auto Apply, local — no backend queue)", () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result).toBeNull();
+  });
+});
+
+describe("api-client (simulated enrollment — apply/enroll first)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("submitEnrollment resolves a simulated reference without any network call", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await submitEnrollment({
+      journeyId: "ehakbang:journey:event:had-a-baby",
+      stepNumber: 2,
+      agencyName: "Philippine Health Insurance Corporation",
+      requiredId: "philhealth",
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.simulated).toBe(true);
+    expect(result.requiredId).toBe("philhealth");
+    expect(result.stepNumber).toBe(2);
+    expect(result.referenceNumber).toMatch(/^SIM-PHILHEALTH-/);
   });
 });
 

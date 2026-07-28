@@ -3,11 +3,16 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import { StepCard } from "./StepCard";
 import type { JourneyStep } from "@/lib/types";
 
-const { submitAutoApply, fetchAutoApplyStatus } = vi.hoisted(() => ({
+const { submitAutoApply, fetchAutoApplyStatus, submitEnrollment } = vi.hoisted(() => ({
   submitAutoApply: vi.fn(),
   fetchAutoApplyStatus: vi.fn(),
+  submitEnrollment: vi.fn(),
 }));
-vi.mock("@/lib/api-client", () => ({ submitAutoApply, fetchAutoApplyStatus }));
+vi.mock("@/lib/api-client", () => ({
+  submitAutoApply,
+  fetchAutoApplyStatus,
+  submitEnrollment,
+}));
 
 const recordStep: JourneyStep = {
   step_number: 1,
@@ -29,6 +34,35 @@ const benefitStep: JourneyStep = {
   step_title: "Claim your SSS maternity benefit",
   step_type: "benefit_claim",
   important_note: null,
+};
+
+const membershipBenefitStep: JourneyStep = {
+  ...recordStep,
+  step_number: 4,
+  step_title: "Claim maternity & newborn benefits",
+  step_type: "benefit_claim",
+  important_note: null,
+  prerequisite: { required_id: "philhealth", prerequisite_type: "membership" },
+};
+
+const contributionBenefitStep: JourneyStep = {
+  ...membershipBenefitStep,
+  step_number: 5,
+  step_title: "Claim your SSS maternity benefit",
+  prerequisite: { required_id: "sss", prerequisite_type: "contribution" },
+};
+
+// Benefit whose membership is already met (prerequisiteState "met") but which
+// still needs the indicative eligibility pre-check before filing.
+const eligibilityBenefitStep: JourneyStep = {
+  ...membershipBenefitStep,
+  step_number: 6,
+  prerequisite: { required_id: "sss", prerequisite_type: "contribution" },
+  eligibility: {
+    filing_window_days: 3650,
+    filing_window_label: "10 years",
+    contingency_label: "Date of delivery",
+  },
 };
 
 const fieldStep: JourneyStep = {
@@ -63,9 +97,11 @@ describe("StepCard", () => {
     onClaim.mockReset();
     submitAutoApply.mockReset();
     fetchAutoApplyStatus.mockReset();
+    submitEnrollment.mockReset();
     baseProps.onSubmitFields.mockReset();
     fetchAutoApplyStatus.mockResolvedValue(null);
     vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-28T00:00:00.000Z"));
   });
 
   afterEach(() => {
@@ -286,5 +322,155 @@ describe("StepCard", () => {
     await act(async () => {});
     expect(screen.getByText(/^completed$/i)).toBeInTheDocument();
     expect(screen.queryByText(/claim your document at/i)).not.toBeInTheDocument();
+  });
+
+  it("shows a locked 'action needed' card (not Auto Apply) for a blocked claim", async () => {
+    render(
+      <StepCard
+        step={membershipBenefitStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+        prerequisiteState="blocked-membership"
+        onEnrolled={vi.fn()}
+      />,
+    );
+    await act(async () => {});
+    expect(screen.getByText(/action needed/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /register for/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /auto apply/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the contribution caveat for a contribution-blocked claim", async () => {
+    render(
+      <StepCard
+        step={contributionBenefitStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+        prerequisiteState="blocked-contribution"
+        onEnrolled={vi.fn()}
+      />,
+    );
+    await act(async () => {});
+    expect(screen.getByText(/may require prior contributions/i)).toBeInTheDocument();
+  });
+
+  it("calls onEnrolled with the required id when 'I already have this' is clicked", async () => {
+    const onEnrolled = vi.fn();
+    render(
+      <StepCard
+        step={membershipBenefitStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+        prerequisiteState="blocked-membership"
+        onEnrolled={onEnrolled}
+      />,
+    );
+    await act(async () => {});
+    fireEvent.click(
+      screen.getByRole("button", { name: /i already have this number/i }),
+    );
+    expect(onEnrolled).toHaveBeenCalledWith("philhealth");
+  });
+
+  it("enrolls (simulated) then calls onEnrolled on the 'Enroll here' path", async () => {
+    submitEnrollment.mockResolvedValue({
+      stepNumber: 4,
+      requiredId: "philhealth",
+      referenceNumber: "SIM-PHILHEALTH-ABC123",
+      simulated: true,
+    });
+    const onEnrolled = vi.fn();
+    render(
+      <StepCard
+        step={membershipBenefitStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+        prerequisiteState="blocked-membership"
+        onEnrolled={onEnrolled}
+      />,
+    );
+    await act(async () => {});
+    fireEvent.click(screen.getByRole("button", { name: /register for/i }));
+    await act(async () => {});
+    expect(submitEnrollment).toHaveBeenCalledWith(
+      expect.objectContaining({ stepNumber: 4, requiredId: "philhealth" }),
+    );
+    expect(onEnrolled).toHaveBeenCalledWith("philhealth");
+  });
+
+  it("shows an eligibility pre-check (not Auto Apply) once membership is met", async () => {
+    render(
+      <StepCard
+        step={eligibilityBenefitStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+        prerequisiteState="met"
+        onEnrolled={vi.fn()}
+      />,
+    );
+    await act(async () => {});
+    expect(screen.getByRole("button", { name: /check eligibility/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /file this claim/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("blocks a lapsed claim (past the filing window) instead of revealing Auto Apply", async () => {
+    render(
+      <StepCard
+        step={eligibilityBenefitStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+        prerequisiteState="met"
+        onEnrolled={vi.fn()}
+      />,
+    );
+    await act(async () => {});
+    // A delivery date far in the past exceeds the 10-year window.
+    fireEvent.change(screen.getByLabelText(/date of delivery/i), {
+      target: { value: "2000-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /check eligibility/i }));
+    await act(async () => {});
+    expect(screen.getByText(/can no longer be filed/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /file this claim/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reveals Auto Apply once the eligibility pre-check passes", async () => {
+    render(
+      <StepCard
+        step={eligibilityBenefitStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        {...baseProps}
+        prerequisiteState="met"
+        onEnrolled={vi.fn()}
+      />,
+    );
+    await act(async () => {});
+    fireEvent.change(screen.getByLabelText(/date of delivery/i), {
+      target: { value: "2026-06-01" },
+    });
+    fireEvent.click(screen.getByLabelText(/contributions are posted/i));
+    fireEvent.click(screen.getByRole("button", { name: /check eligibility/i }));
+    await act(async () => {});
+    expect(screen.getByRole("button", { name: /file this claim/i })).toBeInTheDocument();
   });
 });

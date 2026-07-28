@@ -112,6 +112,48 @@ const FIL: Record<string, string> = {
   Completed: "Tapos na",
   "You already have this — it's in your ID Wallet":
     "Meron ka na nito — nasa iyong ID Wallet",
+  "Action needed": "May kailangang gawin",
+  "Simulated": "Simulate lang",
+  "You need a": "Kailangan mo ng",
+  "to claim this benefit.": "para ma-claim ang benepisyong ito.",
+  "Enrolling starts your membership, but this benefit may require prior contributions before you can claim.":
+    "Sinisimulan ng pag-enroll ang iyong membership, ngunit maaaring kailanganin ng benepisyong ito ang mga naunang kontribusyon bago ka maka-claim.",
+  "Enroll here": "Mag-enroll dito",
+  "Enrolling…": "Nag-e-enroll…",
+  "Register for": "Magparehistro para sa",
+  "Registering…": "Nagpaparehistro…",
+  "I already have this number": "Meron na akong numerong ito",
+  "Enrolled — you can now claim this benefit.":
+    "Naka-enroll na — pwede mo nang i-claim ang benepisyong ito.",
+  "Couldn't enroll you. Please try again.":
+    "Hindi ka na-enroll. Subukan muli.",
+  "Couldn't register you. Please try again.":
+    "Hindi ka naparehistro. Subukan muli.",
+  "benefit needs registration first": "benepisyo ang kailangang magparehistro muna",
+  "benefits need registration first": "benepisyo ang kailangang magparehistro muna",
+  "Tap “Register” on a locked benefit to unlock it.":
+    "I-tap ang “Magparehistro” sa naka-lock na benepisyo para i-unlock ito.",
+  "File this claim": "I-file ang claim na ito",
+  "Claim filed — awaiting agency decision":
+    "Na-file na ang claim — hinihintay ang desisyon ng ahensya",
+  "Benefits have conditions — let's check if you can still claim.":
+    "May mga kondisyon ang benepisyo — tingnan natin kung pwede ka pang mag-claim.",
+  "You must file within": "Dapat mag-file sa loob ng",
+  "of this date.": "mula sa petsang ito.",
+  "Cash benefits usually require posted contributions.":
+    "Karaniwang kailangan ng nakapost na kontribusyon ang cash benefits.",
+  "We don't verify this with the agency — they'll confirm it when you file.":
+    "Hindi namin ito bini-verify sa ahensya — kokumpirmahin nila ito kapag nag-file ka.",
+  "Check eligibility": "Suriin ang pagiging kwalipikado",
+  "Re-check eligibility": "Suriing muli ang pagiging kwalipikado",
+  "This is an indicative pre-check only. The agency makes the final decision when you file.":
+    "Ito ay paunang pagsusuri lamang. Ang ahensya ang may huling desisyon kapag nag-file ka.",
+  "Filing window:": "Palugit sa pag-file:",
+  "My contributions are posted and up to date":
+    "Nakapost at napapanahon ang aking mga kontribusyon",
+  "Check the official requirements": "Tingnan ang opisyal na requirements",
+  "Indicative: you may be eligible — the agency decides when you file.":
+    "Indikatibo: maaaring kwalipikado ka — ang ahensya ang magdedesisyon kapag nag-file ka.",
   "Record Update": "Pag-update ng Rekord",
   "Record Updates": "Mga Pag-update ng Rekord",
   "Benefit Claim": "Pag-claim ng Benepisyo",

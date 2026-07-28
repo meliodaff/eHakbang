@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Journey } from "@/lib/types";
+import type { IdType } from "@/lib/types";
 import { EVENT_JOURNEYS } from "@/lib/event-journeys";
 import {
   getActiveJourney,
@@ -15,7 +16,8 @@ import {
   markStepsSubmitted,
   setFieldAnswers,
 } from "@/lib/journey-store";
-import { useIdWallet, stepFulfilledByWallet } from "@/lib/id-wallet";
+import { useIdWallet, stepFulfilledByWallet, setId } from "@/lib/id-wallet";
+import { getPrerequisiteState, type PrerequisiteState } from "@/lib/journey-prerequisites";
 import { eventSupportsApplyAll } from "@/lib/journey-features";
 import { useT } from "@/lib/i18n";
 import { recordJourneyRefresh } from "@/lib/journey-notice-store";
@@ -82,6 +84,28 @@ export function JourneyScreen({
       .map((s) => s.step_number);
   }, [journey, heldIds]);
 
+  // Per-step prerequisite status vs. the ID wallet. A benefit claim whose
+  // required agency membership the citizen doesn't hold is "blocked-*", so
+  // StepCard shows a locked "action needed" card with an enroll-first path
+  // instead of the claim action. Recomputes as the wallet changes, so
+  // enrolling (or declaring an existing ID) unlocks the claim with no reload.
+  const prerequisiteStates = useMemo<Record<number, PrerequisiteState>>(() => {
+    if (!journey) return {};
+    const map: Record<number, PrerequisiteState> = {};
+    for (const step of journey.steps) {
+      map[step.step_number] = getPrerequisiteState(step, heldIds);
+    }
+    return map;
+  }, [journey, heldIds]);
+
+  const blockedCount = useMemo(
+    () =>
+      Object.values(prerequisiteStates).filter(
+        (s) => s === "blocked-membership" || s === "blocked-contribution",
+      ).length,
+    [prerequisiteStates],
+  );
+
   // Manual completions ∪ wallet-satisfied steps.
   const effectiveCompleted = useMemo(() => {
     if (!journey) return [];
@@ -142,6 +166,13 @@ export function JourneyScreen({
 
   function handleSubmitFields(answers: Record<number, Record<string, string>>) {
     setJourney((current) => (current ? setFieldAnswers(current, answers) : current));
+  }
+
+  // The citizen enrolled for (or declared they already hold) a required ID.
+  // Writing it to the wallet triggers useIdWallet's reactive update, which
+  // recomputes prerequisiteStates and unblocks the dependent claim -- no reload.
+  function handleEnrolled(idType: IdType) {
+    setId(idType, true);
   }
 
   function handleFinish() {
@@ -220,10 +251,25 @@ export function JourneyScreen({
         </div>
       )}
 
+      {blockedCount > 0 && (
+        <div className="flex items-start gap-2 border-b border-border bg-egov-warning-bg px-5 py-3 text-sm text-egov-warning">
+          <span aria-hidden>🔒</span>
+          <p>
+            {blockedCount}{" "}
+            {t(
+              blockedCount === 1 ? "benefit needs registration first" : "benefits need registration first",
+            )}
+            {". "}
+            {t("Tap “Register” on a locked benefit to unlock it.")}
+          </p>
+        </div>
+      )}
+
       <JourneyView
         journey={journey}
         completed={effectiveCompleted}
         walletStepNumbers={walletStepNumbers}
+        prerequisiteStates={prerequisiteStates}
         afterHeader={
           showApplyAll ? (
             <ApplyAllPrompt
@@ -238,6 +284,7 @@ export function JourneyScreen({
         onClaim={handleClaim}
         onSubmit={handleSubmit}
         onSubmitFields={handleSubmitFields}
+        onEnrolled={handleEnrolled}
       />
 
       {allDone && (

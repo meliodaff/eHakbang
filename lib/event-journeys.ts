@@ -146,6 +146,18 @@ export const EVENT_JOURNEYS: Record<string, Journey> = {
         important_note: "Verify current coverage amounts on the official page.",
         egov_service_name: "PhilHealth Benefit Claim",
         egov_search_term: "PhilHealth maternity benefit claim",
+        prerequisite: {
+          required_id: "philhealth",
+          prerequisite_type: "membership",
+          note: "You need a PhilHealth number to claim maternity & newborn benefits. Enroll first if you don't have one yet.",
+          enroll_service_name: "PhilHealth Membership Registration",
+          enroll_search_term: "PhilHealth membership registration",
+        },
+        eligibility: {
+          filing_window_days: 60,
+          filing_window_label: "60 days",
+          contingency_label: "Date of delivery",
+        },
       },
       {
         agency_name: "Social Security System",
@@ -158,6 +170,18 @@ export const EVENT_JOURNEYS: Record<string, Journey> = {
         important_note: "Amount depends on contributions — verify officially.",
         egov_service_name: "SSS Maternity Benefit",
         egov_search_term: "SSS maternity benefit",
+        prerequisite: {
+          required_id: "sss",
+          prerequisite_type: "contribution",
+          note: "You need an SSS number to file this claim. Enrolling registers your membership, but the cash benefit also depends on your posted contributions.",
+          enroll_service_name: "SSS Online Member Registration",
+          enroll_search_term: "SSS online member registration",
+        },
+        eligibility: {
+          filing_window_days: 3650,
+          filing_window_label: "10 years",
+          contingency_label: "Date of delivery",
+        },
       },
       {
         agency_name: "Philippine Health Insurance Corporation",

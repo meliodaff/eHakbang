@@ -69,6 +69,53 @@ export interface StepFee {
   official_source_url?: string | null;
 }
 
+/**
+ * A membership/account prerequisite for a benefit claim. Some benefits can
+ * only be claimed once the citizen holds the issuing agency's ID/number. When
+ * the ID wallet lacks `required_id`, the claim is surfaced in a locked
+ * "action needed" state (see `lib/journey-prerequisites.ts`) with an
+ * enroll-first path rather than being hidden — so benefits stay discoverable.
+ *
+ * `prerequisite_type` distinguishes what enrolling actually unblocks:
+ * - `membership`: getting the number/account is enough to claim (e.g. a
+ *   PhilHealth number). Enrolling immediately unblocks the claim.
+ * - `contribution`: the benefit also needs prior contributions/time (e.g. SSS
+ *   maternity). Enrolling starts membership but does NOT guarantee immediate
+ *   eligibility — the UI says so honestly (PRD "Honest AI").
+ */
+export interface StepPrerequisite {
+  /** The government ID/membership this claim depends on. */
+  required_id: IdType;
+  prerequisite_type: "membership" | "contribution";
+  /** Plain-language explanation shown on the locked card. Null when none. */
+  note?: string | null;
+  /** Official service name used to enroll / obtain the number. */
+  enroll_service_name?: string;
+  /** Catalog lookup term for the enrollment service. */
+  enroll_search_term?: string;
+}
+
+/**
+ * Indicative eligibility rules for a benefit claim, checked *before* filing
+ * (see `lib/journey-eligibility.ts`). Membership (holding the number) only
+ * unlocks the *ability to file*; whether the citizen actually qualifies is a
+ * separate gate the agency ultimately decides. We model the two rules we can
+ * defend without a live agency integration:
+ *  - a **filing window/deadline** measured from a contingency date (e.g. SSS
+ *    maternity: within 10 years of delivery; PhilHealth: within 60 days), and
+ *  - a **contributions self-check** (derived from a `contribution`-type
+ *    prerequisite, not stored here).
+ * Results are always framed as indicative — the agency makes the final call.
+ */
+export interface StepEligibility {
+  /** File within this many days of the contingency date; null = no deadline. */
+  filing_window_days?: number | null;
+  /** Human phrasing of the window for display, e.g. "10 years", "60 days". */
+  filing_window_label?: string | null;
+  /** Label for the contingency date input, e.g. "Date of delivery". */
+  contingency_label?: string;
+}
+
 /** One ordered government action. Mirrors PRD §9.1.2 `steps[]`. */
 export interface JourneyStep {
   step_number: number;
@@ -106,6 +153,18 @@ export interface JourneyStep {
    * auto-satisfied (marked done dynamically without manual action).
    */
   fulfills_id?: IdType;
+  /**
+   * For a `benefit_claim`, the membership/account it depends on. When the
+   * citizen doesn't hold `prerequisite.required_id` in their ID wallet, the
+   * claim is shown locked ("action needed") with an enroll-first path instead
+   * of being hidden. Absent/null when the claim has no such prerequisite.
+   */
+  prerequisite?: StepPrerequisite | null;
+  /**
+   * For a `benefit_claim`, indicative eligibility rules checked before filing
+   * (filing deadline, etc.). Absent/null when the claim has no such rules.
+   */
+  eligibility?: StepEligibility | null;
 }
 
 /**

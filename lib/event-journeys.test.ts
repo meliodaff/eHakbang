@@ -44,4 +44,30 @@ describe("event journeys", () => {
   it("returns undefined for an unknown event id", () => {
     expect(getJourneyByEventId("no-such-event")).toBeUndefined();
   });
+
+  it("gives the Had a Baby PhilHealth & SSS claims their enroll-first prerequisites", () => {
+    const baby = getJourneyByEventId("had-a-baby")!;
+
+    const philhealthClaim = baby.steps.find(
+      (s) => s.agency_code === "PHILHEALTH" && s.step_type === "benefit_claim",
+    );
+    expect(philhealthClaim?.prerequisite).toMatchObject({
+      required_id: "philhealth",
+      prerequisite_type: "membership",
+    });
+
+    const sssClaim = baby.steps.find(
+      (s) => s.agency_code === "SSS" && s.step_type === "benefit_claim",
+    );
+    expect(sssClaim?.prerequisite).toMatchObject({
+      required_id: "sss",
+      prerequisite_type: "contribution",
+    });
+    expect(sssClaim?.eligibility).toMatchObject({ filing_window_days: 3650 });
+
+    const philhealthEligibility = baby.steps.find(
+      (s) => s.agency_code === "PHILHEALTH" && s.step_type === "benefit_claim",
+    )?.eligibility;
+    expect(philhealthEligibility).toMatchObject({ filing_window_days: 60 });
+  });
 });

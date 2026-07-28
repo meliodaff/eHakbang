@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { EhakbangLogo } from "@/components/brand/Logo";
 import { RegisterForm } from "@/components/auth/RegisterForm";
-import { CompleteProfileForm } from "@/components/auth/CompleteProfileForm";
 import { createClient } from "@/lib/supabase/server-client";
 
 export default async function RegisterPage() {
@@ -36,7 +35,7 @@ export default async function RegisterPage() {
           <EhakbangLogo className="scale-125" />
           <p className="text-sm text-muted">Complete your profile</p>
         </div>
-        <CompleteProfileForm fullName={fullName} email={email} />
+        <RegisterForm defaultFullName={fullName} defaultEmail={email} completingOAuth />
       </main>
     );
   }

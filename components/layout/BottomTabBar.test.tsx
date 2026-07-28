@@ -23,7 +23,11 @@ describe("BottomTabBar", () => {
     // Representative host tabs are present (as demo buttons).
     expect(screen.getByRole("button", { name: /scan qr/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /history/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /account/i })).toBeInTheDocument();
+    // Account is a real, functional link (wired to /account).
+    expect(screen.getByRole("link", { name: /account/i })).toHaveAttribute(
+      "href",
+      "/account",
+    );
   });
 
   it("links the Digital ID FAB to the ID wallet on the home route", () => {

@@ -63,36 +63,20 @@ export default function TermsPage() {
 
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-bold text-foreground">
-          3. eGov SSO — Sensitive Personal Information
+          3. eGov SSO
         </h2>
         <p className="text-sm text-muted">
-          If you choose to sign in with <strong>eGov SSO</strong>, you are
-          authenticating with your existing government-issued digital
-          identity. With your explicit consent, we receive and store a fuller
-          government-verified profile than what a normal registration
-          collects, including:
+          If you choose to sign in with <strong>eGov SSO</strong>, you are authenticating with your
+          existing government-issued digital identity. During the one-time sign-in exchange, eGov's
+          response includes your full legal name, email, and mobile number, which we use the same
+          way as a normal registration — <strong>we store only your name and phone number</strong>{" "}
+          in your account profile, identical to what email/password registration collects.
         </p>
-        <ul className="list-disc pl-5 text-sm text-muted">
-          <li>Your full legal name, birth date, gender, and nationality</li>
-          <li>Your verified mobile number and complete address</li>
-          <li>
-            <strong>Sensitive personal information</strong> as defined under
-            Section 3(l) of RA 10173: your national ID details, passport
-            number and details, and your signature image
-          </li>
-          <li>
-            Additional profile data where provided: health-related details
-            (e.g. height/weight), family details (parents), emergency
-            contact, education, and occupation information
-          </li>
-        </ul>
         <p className="text-sm text-muted">
-          Because this includes sensitive personal information, RA 10173
-          requires a higher standard of protection and, generally, your
-          explicit consent — which you provide by choosing to initiate eGov
-          sign-in and by agreeing to this Notice. We use this data solely to
-          verify your identity and operate your account; see Section 8 for
-          the current state of database-level access controls on this data.
+          eGov's response may also include additional details such as your address, national ID, and
+          passport information. <strong>We do not store any of this</strong> — it is received only
+          transiently to complete the sign-in exchange and is discarded immediately afterward, never
+          written to our database.
         </p>
       </section>
 
@@ -130,11 +114,6 @@ export default function TermsPage() {
             information is necessary to provide the government-journey-
             planning service you requested.
           </li>
-          <li>
-            <strong>Explicit consent for sensitive personal information</strong>{" "}
-            — for the additional eGov SSO profile data described in Section
-            3, given by choosing to sign in with eGov.
-          </li>
         </ul>
       </section>
 
@@ -162,8 +141,8 @@ export default function TermsPage() {
           <li>
             <strong>eGov</strong> (the Philippine government's SSO service) —
             only if you choose "Continue with eGov," to verify your
-            government-issued identity and receive the profile described in
-            Section 3, with your consent.
+            government-issued identity, as described in Section 3, with your
+            consent.
           </li>
         </ul>
       </section>
@@ -207,10 +186,9 @@ export default function TermsPage() {
         <p className="rounded-egov bg-egov-warning-bg px-4 py-3 text-sm text-egov-warning">
           Transparency note: this app is under active development. Database-
           level row access controls (Row Level Security) for account profile
-          data — including the sensitive eGov SSO profile described in
-          Section 3 — are still being finalized and are not yet fully in
-          place. We are disclosing this candidly rather than hiding it, and
-          it will be completed before any production launch.
+          data are still being finalized and are not yet fully in place. We
+          are disclosing this candidly rather than hiding it, and it will be
+          completed before any production launch.
         </p>
       </section>
 

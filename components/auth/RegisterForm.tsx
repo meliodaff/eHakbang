@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { signUpAction, type FormState } from "@/app/actions/auth";
+import { signUpAction, completeOAuthProfileAction, type FormState } from "@/app/actions/auth";
 import { useT } from "@/lib/i18n";
 import { TurnstileWidget } from "./TurnstileWidget";
 import { GoogleSignInButton } from "./GoogleSignInButton";
@@ -10,6 +10,8 @@ import { EgovSignInButton } from "./EgovSignInButton";
 
 const inputCls =
   "rounded-egov border border-border bg-background px-3 py-2.5 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue";
+const lockedInputCls =
+  "rounded-egov border border-border bg-surface-muted px-3 py-2.5 text-sm text-muted";
 
 function FieldErrorList({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
@@ -22,10 +24,31 @@ function FieldErrorList({ errors }: { errors?: string[] }) {
   );
 }
 
-/** Full email/password registration form (name, email, phone, password, confirm, Turnstile, terms). */
-export function RegisterForm() {
+/**
+ * Registration form — same flow for everyone. For a plain email/password
+ * sign-up, all fields are blank and posts to signUpAction. After a
+ * first-time Google sign-in (no profiles row yet), the exact same form is
+ * shown with fullName/email pre-filled from Google and locked (the server
+ * action re-derives them from the authenticated session regardless of what
+ * the client submits, so editing them wouldn't do anything) — password,
+ * confirm password, Turnstile, and the Google/eGov buttons are hidden since
+ * Google already authenticated this person, and it posts to
+ * completeOAuthProfileAction instead.
+ */
+export function RegisterForm({
+  defaultFullName,
+  defaultEmail,
+  completingOAuth = false,
+}: {
+  defaultFullName?: string;
+  defaultEmail?: string;
+  completingOAuth?: boolean;
+}) {
   const t = useT();
-  const [state, action, pending] = useActionState<FormState, FormData>(signUpAction, undefined);
+  const [state, action, pending] = useActionState<FormState, FormData>(
+    completingOAuth ? completeOAuthProfileAction : signUpAction,
+    undefined,
+  );
 
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -33,7 +56,16 @@ export function RegisterForm() {
         <label htmlFor="fullName" className="text-sm font-semibold text-foreground">
           {t("Full Name")}
         </label>
-        <input id="fullName" name="fullName" type="text" required autoComplete="name" className={inputCls} />
+        <input
+          id="fullName"
+          name="fullName"
+          type="text"
+          required
+          autoComplete="name"
+          defaultValue={defaultFullName}
+          readOnly={completingOAuth}
+          className={completingOAuth ? lockedInputCls : inputCls}
+        />
         <FieldErrorList errors={state?.errors?.fullName} />
       </div>
 
@@ -41,7 +73,16 @@ export function RegisterForm() {
         <label htmlFor="email" className="text-sm font-semibold text-foreground">
           {t("Email")}
         </label>
-        <input id="email" name="email" type="email" required autoComplete="email" className={inputCls} />
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          defaultValue={defaultEmail}
+          readOnly={completingOAuth}
+          className={completingOAuth ? lockedInputCls : inputCls}
+        />
         <FieldErrorList errors={state?.errors?.email} />
       </div>
 
@@ -61,37 +102,41 @@ export function RegisterForm() {
         <FieldErrorList errors={state?.errors?.phone} />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-semibold text-foreground">
-          {t("Password")}
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="new-password"
-          className={inputCls}
-        />
-        <FieldErrorList errors={state?.errors?.password} />
-      </div>
+      {!completingOAuth && (
+        <>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="password" className="text-sm font-semibold text-foreground">
+              {t("Password")}
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoComplete="new-password"
+              className={inputCls}
+            />
+            <FieldErrorList errors={state?.errors?.password} />
+          </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="confirmPassword" className="text-sm font-semibold text-foreground">
-          {t("Confirm Password")}
-        </label>
-        <input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          required
-          autoComplete="new-password"
-          className={inputCls}
-        />
-        <FieldErrorList errors={state?.errors?.confirmPassword} />
-      </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="confirmPassword" className="text-sm font-semibold text-foreground">
+              {t("Confirm Password")}
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              required
+              autoComplete="new-password"
+              className={inputCls}
+            />
+            <FieldErrorList errors={state?.errors?.confirmPassword} />
+          </div>
 
-      <TurnstileWidget />
+          <TurnstileWidget />
+        </>
+      )}
 
       <div className="flex items-start gap-2">
         <input
@@ -119,24 +164,34 @@ export function RegisterForm() {
         disabled={pending}
         className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:opacity-60"
       >
-        {pending ? t("Creating account…") : t("Create Account")}
+        {completingOAuth
+          ? pending
+            ? t("Saving…")
+            : t("Finish Setting Up")
+          : pending
+            ? t("Creating account…")
+            : t("Create Account")}
       </button>
 
-      <div className="flex items-center gap-3 text-xs text-muted">
-        <span className="h-px flex-1 bg-border" />
-        <span>{t("or")}</span>
-        <span className="h-px flex-1 bg-border" />
-      </div>
+      {!completingOAuth && (
+        <>
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-border" />
+            <span>{t("or")}</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
 
-      <GoogleSignInButton />
-      <EgovSignInButton />
+          <GoogleSignInButton />
+          <EgovSignInButton />
 
-      <p className="text-center text-sm text-muted">
-        {t("Already have an account?")}{" "}
-        <Link href="/login" className="font-semibold text-egov-blue">
-          {t("Sign In")}
-        </Link>
-      </p>
+          <p className="text-center text-sm text-muted">
+            {t("Already have an account?")}{" "}
+            <Link href="/login" className="font-semibold text-egov-blue">
+              {t("Sign In")}
+            </Link>
+          </p>
+        </>
+      )}
     </form>
   );
 }

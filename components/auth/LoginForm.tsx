@@ -16,7 +16,7 @@ export function LoginForm({ confirmNotice }: { confirmNotice?: boolean }) {
   const [state, action, pending] = useActionState<FormState, FormData>(signInAction, undefined);
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} className="flex flex-col gap-4" autoComplete="off">
       {confirmNotice && (
         <p className="rounded-egov bg-egov-blue-050 px-3 py-2.5 text-sm text-egov-blue-dark">
           {t("Account created. Check your email to confirm your account, then sign in.")}
@@ -27,7 +27,7 @@ export function LoginForm({ confirmNotice }: { confirmNotice?: boolean }) {
         <label htmlFor="email" className="text-sm font-semibold text-foreground">
           {t("Email")}
         </label>
-        <input id="email" name="email" type="email" required autoComplete="email" className={inputCls} />
+        <input id="email" name="email" type="email" required autoComplete="off" className={inputCls} />
       </div>
 
       <div className="flex flex-col gap-1">
@@ -39,7 +39,7 @@ export function LoginForm({ confirmNotice }: { confirmNotice?: boolean }) {
           name="password"
           type="password"
           required
-          autoComplete="current-password"
+          autoComplete="off"
           className={inputCls}
         />
       </div>

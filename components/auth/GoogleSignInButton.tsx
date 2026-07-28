@@ -34,7 +34,12 @@ export function GoogleSignInButton() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        // Force Google's account chooser every time, instead of silently
+        // reusing whichever Google session is already active in the browser.
+        queryParams: { prompt: "select_account" },
+      },
     });
   }
 

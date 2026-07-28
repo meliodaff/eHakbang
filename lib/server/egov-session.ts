@@ -23,8 +23,11 @@ function buildFullName(profile: EgovProfile): string {
  * eGov already supplies full name, email, and mobile number in one profile
  * fetch (unlike Google, which only gives name+email) — so unlike the Google
  * flow, there's no separate "complete your profile" step: this function
- * upserts profiles/egov_profiles directly for both first-time and returning
- * eGov sign-ins.
+ * upserts `profiles` directly for both first-time and returning eGov
+ * sign-ins. `profiles` is the single source of truth for account data
+ * regardless of sign-in method — the rest of the eGov profile (address,
+ * national ID, passport, signature, etc.) is used only transiently to
+ * derive full_name/phone and is not persisted.
  */
 export async function completeEgovSignIn(exchangeCode: string): Promise<{ error?: string }> {
   let profile: EgovProfile;
@@ -74,49 +77,6 @@ export async function completeEgovSignIn(exchangeCode: string): Promise<{ error?
   );
   if (profileError) {
     return { error: "Signed in, but saving your profile failed. Please contact support." };
-  }
-
-  const { error: egovProfileError } = await admin.from("egov_profiles").upsert(
-    {
-      id: userId,
-      egov_uniqid: profile.uniqid,
-      first_name: profile.first_name,
-      middle_name: profile.middle_name,
-      last_name: profile.last_name,
-      suffix: profile.suffix,
-      gender: profile.gender,
-      birth_date: profile.birth_date,
-      nationality: profile.nationality,
-      mobile: profile.mobile,
-      photo_url: profile.photo,
-      address: profile.address,
-      street: profile.street,
-      barangay: profile.barangay,
-      municipality: profile.municipality,
-      region: profile.region,
-      province: profile.province,
-      country: profile.country,
-      country_alpha_2_code: profile.country_alpha_2_code,
-      country_alpha_3_code: profile.country_alpha_3_code,
-      postal: profile.postal,
-      address_line_2: profile.address_line_2,
-      barangay_code: profile.barangay_code,
-      province_code: profile.province_code,
-      municipality_code: profile.municipality_code,
-      region_code: profile.region_code,
-      country_id: profile.country_id,
-      signature: profile.signature,
-      signature_url: profile.signature_url,
-      additional_information: profile.additional_information,
-      passport: profile.passport,
-      national_id: profile.national_id,
-      tin_id: profile.tin_id,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "id" },
-  );
-  if (egovProfileError) {
-    return { error: "Signed in, but saving your eGov profile failed. Please contact support." };
   }
 
   return {};

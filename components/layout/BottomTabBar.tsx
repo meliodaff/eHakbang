@@ -147,7 +147,12 @@ export function BottomTabBar() {
           <TabStub label="Scan QR" icon={<ScanIcon />} />
           <Fab label="Digital ID" href="/wallet" ariaLabel="Open my ID Wallet" />
           <TabStub label="History" icon={<HistoryIcon />} />
-          <TabStub label="Account" icon={<AccountIcon />} />
+          <TabLink
+            href="/account"
+            label="Account"
+            icon={<AccountIcon />}
+            active={pathname.startsWith("/account")}
+          />
         </>
       ) : (
         <>

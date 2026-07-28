@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AppShell } from "@/components/layout/AppShell";
 import { DemoDataReset } from "@/components/DemoDataReset";
 import { LanguageProvider } from "@/lib/i18n";
 import { SERVER_SESSION_ID } from "@/lib/server-session";
@@ -21,7 +20,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "eHakbang",
   description:
-    "AI-powered government journey planner for Filipino citizens. Get an ordered, personalized checklist of government steps after a life event — no login, no personal data collected.",
+    "AI-powered government journey planner for Filipino citizens. Get an ordered, personalized checklist of government steps after a life event. Sign in required to use the app.",
   applicationName: "eHakbang",
 };
 
@@ -40,12 +39,11 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full">
         <DemoDataReset serverSessionId={SERVER_SESSION_ID} />
-        <LanguageProvider>
-          <AppShell>{children}</AppShell>
-        </LanguageProvider>
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

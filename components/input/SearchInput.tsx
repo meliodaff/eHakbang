@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LIFE_EVENTS } from "@/lib/events";
+import { LIFE_EVENTS, getLifeEventById } from "@/lib/events";
 import type { LifeEvent } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { navigateToEvent } from "@/lib/navigate-to-event";
 
 const MIN_CHARS_FOR_SUGGESTIONS = 3;
+const MIN_CHARS = 3;
+const MAX_CHARS = 200;
 
 function matchEvents(query: string): LifeEvent[] {
   const q = query.trim().toLowerCase();
@@ -23,18 +26,65 @@ function matchEvents(query: string): LifeEvent[] {
  * Hero life-event input (PRD FR-01). Auto-focused free-text field that accepts
  * Filipino/English/Taglish, surfaces matching event chips after 3 characters,
  * and generates a journey on submit.
+ *
+ * Free text that doesn't match a suggestion chip is first classified against
+ * the preset catalog (`/api/journey/classify`) so a paraphrased match (e.g.
+ * "I just became a parent") still routes into that preset's confirm/verify
+ * flow; only genuinely new events fall through to a custom AI-generated
+ * journey at `/journey?q=`.
  */
 export function SearchInput() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const suggestions = matchEvents(query);
 
-  function generate(text: string, eventId?: string) {
-    if (!text.trim()) return;
-    const params = new URLSearchParams();
-    if (eventId) params.set("event", eventId);
-    const qs = params.toString();
-    router.push(`/journey${qs ? `?${qs}` : ""}`);
+  function selectSuggestion(event: LifeEvent) {
+    navigateToEvent(router, event);
+  }
+
+  async function generate(text: string) {
+    const trimmed = text.trim();
+    if (trimmed.length < MIN_CHARS || trimmed.length > MAX_CHARS) {
+      setError(
+        `Ilarawan ang iyong sitwasyon sa ${MIN_CHARS}-${MAX_CHARS} na character.`,
+      );
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    // Canonical, wording-independent slug for this situation (from
+    // classification) — lets the server reuse a cached journey for a
+    // different phrasing of the same context. Falls back to hashing the raw
+    // text server-side when classification is unavailable.
+    let canonicalSlug: string | null = null;
+    try {
+      const res = await fetch("/api/journey/classify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: trimmed }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          eventId: string | null;
+          canonicalSlug?: string;
+        };
+        const matched = data.eventId ? getLifeEventById(data.eventId) : undefined;
+        if (matched) {
+          navigateToEvent(router, matched);
+          return;
+        }
+        canonicalSlug = data.canonicalSlug ?? null;
+      }
+    } catch {
+      // Classification unavailable — fall through to a custom journey below
+      // rather than blocking the user.
+    } finally {
+      setLoading(false);
+    }
+    const slugParam = canonicalSlug ? `&slug=${encodeURIComponent(canonicalSlug)}` : "";
+    router.push(`/journey?q=${encodeURIComponent(trimmed)}${slugParam}`);
   }
 
   return (
@@ -78,13 +128,19 @@ export function SearchInput() {
         />
       </div>
 
+      {error && (
+        <p role="alert" className="text-sm text-egov-danger">
+          {error}
+        </p>
+      )}
+
       {suggestions.length > 0 && (
         <ul className="flex flex-wrap gap-2" aria-label="Mga mungkahi">
           {suggestions.map((event) => (
             <li key={event.id}>
               <button
                 type="button"
-                onClick={() => generate(event.description, event.id)}
+                onClick={() => selectSuggestion(event)}
                 className="flex items-center gap-1.5 rounded-full border border-egov-blue-100 bg-egov-blue-050 px-3 py-1.5 text-sm font-medium text-egov-blue-dark transition-colors hover:bg-egov-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
               >
                 <span aria-hidden>{event.emoji}</span>
@@ -97,14 +153,14 @@ export function SearchInput() {
 
       <button
         type="submit"
-        disabled={!query.trim()}
+        disabled={!query.trim() || loading}
         className={cn(
           "min-h-12 rounded-egov bg-egov-blue px-5 py-3 text-base font-semibold text-white transition-colors",
           "hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue",
           "disabled:cursor-not-allowed disabled:opacity-50",
         )}
       >
-        Generate My Journey
+        {loading ? "Ginagawa…" : "Generate My Journey"}
       </button>
     </form>
   );

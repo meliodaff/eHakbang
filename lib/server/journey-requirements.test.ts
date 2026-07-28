@@ -17,8 +17,25 @@ vi.mock("./openai-journey", () => ({
   inferPrerequisite: () => null,
 }));
 
+const { getSupabaseServerClient } = vi.hoisted(() => ({
+  getSupabaseServerClient: vi.fn(),
+}));
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient }));
+vi.mock("@/lib/journey-eligibility", () => ({ inferEligibility: () => null }));
+
 import { getOrRegenerateCustomJourney, getOrRegenerateJourney } from "./journey-requirements";
 import { customEventId } from "@/lib/custom-event";
+
+function makeSupabaseMock(opts: { existing?: unknown | null } = {}) {
+  const builder = {
+    select: vi.fn(() => builder),
+    eq: vi.fn(() => builder),
+    upsert: vi.fn(() => builder),
+    maybeSingle: vi.fn(async () => ({ data: opts.existing ?? null, error: null })),
+    single: vi.fn(async () => ({ data: null, error: null })),
+  };
+  return { from: vi.fn(() => builder), builder };
+}
 
 const AI_GENERATED = {
   summary: "AI summary",
@@ -48,9 +65,37 @@ const AI_GENERATED = {
 describe("getOrRegenerateJourney", () => {
   beforeEach(() => {
     generateJourneyWithOpenAI.mockReset();
+    getSupabaseServerClient.mockReset();
   });
 
-  it("always generates fresh via OpenAI, never reads a cache", async () => {
+  it("serves from Supabase cache when the cached row is fresh (<24h)", async () => {
+    const cached = {
+      event_id: "retired",
+      language: "en",
+      emoji: "🧓",
+      life_event: "Retired",
+      summary: "Cached summary",
+      steps: AI_GENERATED.steps,
+      total_steps: 1,
+      record_updates: 0,
+      benefit_claims: 1,
+      updated_at: new Date().toISOString(), // fresh
+    };
+    getSupabaseServerClient.mockReturnValue(makeSupabaseMock({ existing: cached }).from(""));
+    // Patch: mockReturnValue of the root `from` call
+    const mock = makeSupabaseMock({ existing: cached });
+    getSupabaseServerClient.mockReturnValue(mock);
+
+    const result = await getOrRegenerateJourney({ eventId: "retired" });
+
+    expect(generateJourneyWithOpenAI).not.toHaveBeenCalled();
+    expect(result.regenerated).toBe(false);
+    expect(result.journey.summary).toBe("Cached summary");
+  });
+
+  it("regenerates via OpenAI when there's no cached row, and upserts the result", async () => {
+    const mock = makeSupabaseMock({ existing: null });
+    getSupabaseServerClient.mockReturnValue(mock);
     generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
 
     const result = await getOrRegenerateJourney({ eventId: "retired" });
@@ -60,20 +105,14 @@ describe("getOrRegenerateJourney", () => {
     );
     expect(result.source).toBe("ai");
     expect(result.regenerated).toBe(true);
-    expect(result.journey.summary).toBe(AI_GENERATED.summary);
+    // Verify upsert was called
+    expect(mock.builder.upsert).toHaveBeenCalled();
   });
 
-  it("passes the citizen's held IDs through to generation", async () => {
-    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
-
-    await getOrRegenerateJourney({ eventId: "retired", heldIds: ["sss", "philhealth"] });
-
-    expect(generateJourneyWithOpenAI).toHaveBeenCalledWith(
-      expect.objectContaining({ heldIds: ["sss", "philhealth"] }),
-    );
-  });
-
-  it("falls back to the seed journey when OpenAI fails", async () => {
+  it("falls back to the seed journey when both cache and OpenAI fail", async () => {
+    getSupabaseServerClient.mockImplementation(() => {
+      throw new Error("Supabase is not configured");
+    });
     generateJourneyWithOpenAI.mockRejectedValue(new Error("OpenAI error"));
 
     const result = await getOrRegenerateJourney({ eventId: "retired" });

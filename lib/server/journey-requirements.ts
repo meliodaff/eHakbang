@@ -2,6 +2,7 @@ import "server-only";
 import type { IdType, Journey, JourneyStep, Language } from "@/lib/types";
 import { getLifeEventById } from "@/lib/events";
 import { getJourneyByEventId } from "@/lib/event-journeys";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   generateJourneyWithOpenAI,
   inferFulfillsId,
@@ -12,18 +13,55 @@ import { customEventId } from "@/lib/custom-event";
 import { inferEligibility } from "@/lib/journey-eligibility";
 
 /**
- * Always-fresh AI generation for journey requirements -- every call hits
- * OpenAI directly, no Supabase cache. Requirements are personalized per
- * citizen via their currently held IDs (see `lib/server/id-wallet.ts`), so a
- * cross-user cache keyed only by event+language could never be reused
- * correctly anyway: two citizens with different wallets need different
- * steps for the same event.
+ * Cache-or-regenerate layer for AI-generated journey requirements. Staleness
+ * is checked lazily on read (no cron): a cached row older than 24h triggers a
+ * regeneration; anything else (missing config, OpenAI/Supabase errors) falls
+ * back to the hand-written seed in `lib/event-journeys.ts` (preset events) or
+ * a minimal empty journey (custom/free-text events, which have no seed) so
+ * the app keeps working without any keys configured.
  *
- * Falls back to the hand-written seed in `lib/event-journeys.ts` (preset
- * events) or a minimal empty journey (custom/free-text events, which have no
- * seed) when generation fails (missing OPENAI_API_KEY, OpenAI error), so the
- * app keeps working without any keys configured.
+ * The cache is keyed by (event_id, language) — NOT per-user. Steps are
+ * universal; personalization (which steps are gated/locked/auto-completed)
+ * happens at display time via the wallet + prerequisite + eligibility layer.
  */
+
+const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+interface JourneyRequirementsRow {
+  event_id: string;
+  language: string;
+  emoji: string;
+  life_event: string;
+  summary: string;
+  steps: JourneyStep[];
+  total_steps: number;
+  record_updates: number;
+  benefit_claims: number;
+  updated_at: string;
+}
+
+function rowToJourney(row: JourneyRequirementsRow, language: Language): Journey {
+  return {
+    id: journeyId(row.event_id),
+    event_id: row.event_id,
+    emoji: row.emoji,
+    life_event: row.life_event,
+    summary: row.summary,
+    total_steps: row.total_steps,
+    record_updates: row.record_updates,
+    benefit_claims: row.benefit_claims,
+    steps: decorateSteps(row.steps),
+    status: "active",
+    language,
+    created_at: row.updated_at,
+    completed_at: null,
+    completed_step_numbers: [],
+    paid_step_numbers: [],
+    field_answers: {},
+    auto_applied_step_numbers: [],
+    claimed_step_numbers: [],
+  };
+}
 
 export interface JourneyResult {
   journey: Journey;
@@ -162,15 +200,75 @@ export async function getOrRegenerateJourney(input: {
   const event = getLifeEventById(input.eventId);
   if (!event) throw new Error(`Unknown life event: ${input.eventId}`);
 
-  return generateFresh({
-    eventId: input.eventId,
-    lifeEvent: event.description,
-    emoji: event.emoji,
-    lifeEventLabel: () => event.sublabel,
-    language,
-    heldIds: input.heldIds ?? [],
-    onFailure: () => seedResult(input.eventId),
-  });
+  // --- 1. Try Supabase cache ---
+  try {
+    const supabase = getSupabaseServerClient();
+    const { data: existing } = await supabase
+      .from("journey_requirements")
+      .select(
+        "event_id, language, emoji, life_event, summary, steps, total_steps, record_updates, benefit_claims, updated_at",
+      )
+      .eq("event_id", input.eventId)
+      .eq("language", language)
+      .maybeSingle<JourneyRequirementsRow>();
+
+    if (existing) {
+      const age = Date.now() - new Date(existing.updated_at).getTime();
+      if (age < STALE_AFTER_MS) {
+        return {
+          journey: rowToJourney(existing, language),
+          regenerated: false,
+          source: "ai",
+        };
+      }
+    }
+
+    // --- 2. Generate fresh (stale or missing) ---
+    const result = await generateFresh({
+      eventId: input.eventId,
+      lifeEvent: event.description,
+      emoji: event.emoji,
+      lifeEventLabel: () => event.sublabel,
+      language,
+      heldIds: input.heldIds ?? [],
+      onFailure: () => seedResult(input.eventId),
+    });
+
+    // --- 3. Upsert the generated journey into the cache ---
+    if (result.source === "ai") {
+      const row = {
+        event_id: input.eventId,
+        language,
+        emoji: event.emoji,
+        life_event: event.sublabel,
+        summary: result.journey.summary,
+        steps: result.journey.steps,
+        total_steps: result.journey.total_steps,
+        record_updates: result.journey.record_updates,
+        benefit_claims: result.journey.benefit_claims,
+        model: "gpt-4.1",
+        updated_at: new Date().toISOString(),
+      };
+      await supabase
+        .from("journey_requirements")
+        .upsert(row, { onConflict: "event_id,language" });
+    }
+
+    return result;
+  } catch (err) {
+    // Supabase not configured or unreachable — generate directly, no cache.
+    const message = err instanceof Error ? err.message : JSON.stringify(err);
+    console.error(`getOrRegenerateJourney(${input.eventId}) cache layer failed: ${message}`);
+    return generateFresh({
+      eventId: input.eventId,
+      lifeEvent: event.description,
+      emoji: event.emoji,
+      lifeEventLabel: () => event.sublabel,
+      language,
+      heldIds: input.heldIds ?? [],
+      onFailure: () => seedResult(input.eventId),
+    });
+  }
 }
 
 const CUSTOM_EMOJI = "📋";

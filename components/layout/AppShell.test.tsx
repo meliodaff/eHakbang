@@ -32,9 +32,9 @@ describe("AppShell", () => {
     expect(screen.queryByRole("navigation", { name: /primary/i })).not.toBeInTheDocument();
   });
 
-  it("hides the bottom nav on My Journeys", () => {
+  it("shows the bottom nav on My Journeys", () => {
     pathname = "/journeys";
     render(<AppShell>content</AppShell>);
-    expect(screen.queryByRole("navigation", { name: /primary/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /primary/i })).toBeInTheDocument();
   });
 });

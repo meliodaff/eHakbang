@@ -56,7 +56,7 @@ export async function saveJourneyForCurrentUser(journey: Journey): Promise<void>
 
     const { error } = await supabase
       .from("journeys")
-      .upsert(journeyToRow(journey, user.id), { onConflict: "id" });
+      .upsert(journeyToRow(journey, user.id), { onConflict: "user_id,id" });
     if (error) throw error;
   } catch (err) {
     console.error(`saveJourneyForCurrentUser(${journey.id}) failed:`, err);

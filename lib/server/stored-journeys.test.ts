@@ -129,7 +129,7 @@ describe("saveJourneyForCurrentUser", () => {
 
     expect(client.builder.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ id: JOURNEY.id, user_id: "u1" }),
-      { onConflict: "id" },
+      { onConflict: "user_id,id" },
     );
   });
 

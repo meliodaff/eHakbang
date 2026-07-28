@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { describeError } from "./describe-error";
 import type { Journey } from "./types";
 import { journeyToRow, rowToJourney, type JourneyRow } from "./journey-row";
 
@@ -37,10 +38,10 @@ export async function syncJourneyToSupabase(journey: Journey): Promise<void> {
     if (!user) return;
     const { error } = await supabase
       .from("journeys")
-      .upsert(journeyToRow(journey, user.id), { onConflict: "id" });
+      .upsert(journeyToRow(journey, user.id), { onConflict: "user_id,id" });
     if (error) throw error;
   } catch (err) {
-    console.error("syncJourneyToSupabase failed:", err);
+    console.error("syncJourneyToSupabase failed:", describeError(err));
   }
 }
 
@@ -52,7 +53,7 @@ export async function deleteJourneysFromSupabase(ids: string[]): Promise<void> {
     const { error } = await supabase.from("journeys").delete().in("id", ids);
     if (error) throw error;
   } catch (err) {
-    console.error("deleteJourneysFromSupabase failed:", err);
+    console.error("deleteJourneysFromSupabase failed:", describeError(err));
   }
 }
 
@@ -68,7 +69,7 @@ export async function deleteAllJourneysFromSupabase(): Promise<void> {
     const { error } = await supabase.from("journeys").delete().eq("user_id", user.id);
     if (error) throw error;
   } catch (err) {
-    console.error("deleteAllJourneysFromSupabase failed:", err);
+    console.error("deleteAllJourneysFromSupabase failed:", describeError(err));
   }
 }
 
@@ -88,7 +89,7 @@ export async function fetchJourneysFromSupabase(): Promise<Journey[]> {
     if (error) throw error;
     return ((data ?? []) as JourneyRow[]).map(rowToJourney);
   } catch (err) {
-    console.error("fetchJourneysFromSupabase failed:", err);
+    console.error("fetchJourneysFromSupabase failed:", describeError(err));
     return [];
   }
 }

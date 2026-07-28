@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { useT } from "@/lib/i18n";
 import { RequirementsTab } from "./RequirementsTab";
+import { SimulateAllButton } from "./SimulateAllButton";
 import { TrackScreen } from "./TrackScreen";
 
 type Tab = "requirements" | "tracking";
@@ -58,6 +59,8 @@ export function TrackTabs({ journeyId }: { journeyId?: string }) {
           {t("Tracking")}
         </button>
       </div>
+
+      <SimulateAllButton journeyId={journeyId} />
 
       <div
         id="track-tab-panel"

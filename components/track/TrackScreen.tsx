@@ -17,13 +17,16 @@ import { useT } from "@/lib/i18n";
  * `journeyId` scopes the screen to a single journey (e.g. tapping "View
  * Track" on a specific row in My Journeys) instead of showing every journey
  * with submitted applications.
+ *
+ * The top-level "simulate everything" control lives in `TrackTabs` (shown
+ * above both the Requirements and Tracking tabs); this screen keeps only the
+ * per-journey simulate button.
  */
 export function TrackScreen({ journeyId }: { journeyId?: string }) {
   const { journeys, ready } = useJourneys();
   const t = useT();
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const ALL_SENTINEL = "__all__";
 
   /**
    * Locally simulate every remaining agency for this journey responding and
@@ -37,29 +40,6 @@ export function TrackScreen({ journeyId }: { journeyId?: string }) {
       const updated = markStepsDone(journey, awaiting);
       if (updated.status === "completed") {
         router.push(`/journey/complete?id=${encodeURIComponent(journey.id)}`);
-      }
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  /**
-   * Simulates every agency across every journey shown here responding and
-   * approving, one journey at a time. Only navigates to the completion
-   * screen when there's exactly one journey involved and it's now done --
-   * with several journeys there's no single completion screen to land on.
-   */
-  async function approveEverything(
-    entries: { journey: Journey; awaiting: number[] }[],
-  ) {
-    setBusyId(ALL_SENTINEL);
-    try {
-      for (const { journey, awaiting } of entries) {
-        await simulateAgencyApproval({ journeyId: journey.id });
-        const updated = markStepsDone(journey, awaiting);
-        if (updated.status === "completed" && entries.length === 1) {
-          router.push(`/journey/complete?id=${encodeURIComponent(journey.id)}`);
-        }
       }
     } finally {
       setBusyId(null);
@@ -138,32 +118,8 @@ export function TrackScreen({ journeyId }: { journeyId?: string }) {
     );
   }
 
-  // Every tracked journey that still has at least one step awaiting a
-  // response, for the top-level "simulate everything" control.
-  const awaitingEntries = tracked
-    .map(({ journey, steps }) => ({
-      journey,
-      awaiting: steps
-        .filter((s) => !journey.completed_step_numbers.includes(s.step_number))
-        .map((s) => s.step_number),
-    }))
-    .filter((entry) => entry.awaiting.length > 0);
-
   return (
     <div className="flex flex-col gap-5 px-5 py-4">
-      {awaitingEntries.length > 0 && (
-        <button
-          type="button"
-          onClick={() => void approveEverything(awaitingEntries)}
-          disabled={busyId !== null}
-          className="min-h-11 rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:opacity-50"
-        >
-          {busyId === ALL_SENTINEL
-            ? t("Simulating agency approval…")
-            : t("Demo: Simulate all applications approved")}
-        </button>
-      )}
-
       {tracked.map(({ journey, steps }) => {
         const isDone = (n: number) =>
           journey.completed_step_numbers.includes(n);

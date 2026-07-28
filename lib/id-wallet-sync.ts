@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { describeError } from "./describe-error";
 import type { IdType } from "./types";
 
 /**
@@ -52,7 +53,7 @@ export async function fetchIdWalletFromSupabase(): Promise<IdType[] | null> {
     if (error) throw error;
     return data?.held_ids ?? null;
   } catch (err) {
-    console.error("fetchIdWalletFromSupabase failed:", err);
+    console.error("fetchIdWalletFromSupabase failed:", describeError(err));
     return null;
   }
 }

@@ -10,7 +10,11 @@ import { BottomTabBar } from "./BottomTabBar";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "/";
-  const showNav = pathname === "/" || pathname === "/ehakbang" || pathname === "/journey";
+  const showNav =
+    pathname === "/" ||
+    pathname === "/ehakbang" ||
+    pathname === "/journey" ||
+    pathname === "/journeys";
 
   return (
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background shadow-sm">

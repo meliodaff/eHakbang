@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { TrackScreen } from "./TrackScreen";
+import { SimulateAllButton } from "./SimulateAllButton";
 import type { Journey, JourneyStep } from "@/lib/types";
 
 const push = vi.fn();
@@ -61,44 +61,25 @@ function journey(overrides: Partial<Journey>): Journey {
   };
 }
 
-describe("TrackScreen", () => {
+describe("SimulateAllButton", () => {
   beforeEach(() => {
     push.mockReset();
     markStepsDone.mockReset();
     simulateAgencyApproval.mockReset();
   });
 
-  it("shows only the requested journey's applications, not every journey's", () => {
-    const married = journey({ id: "j1", life_event: "Got Married" });
-    const babyStep = step({ step_number: 1, agency_name: "PSA" });
-    const baby = journey({
-      id: "j2",
-      life_event: "Had a Baby",
-      steps: [babyStep],
-      submitted_step_numbers: [1],
-    });
-    useJourneys.mockReturnValue({ journeys: [married, baby], ready: true });
-
-    render(<TrackScreen journeyId="j1" />);
-
-    expect(screen.getByText("Got Married")).toBeInTheDocument();
-    expect(screen.queryByText("Had a Baby")).not.toBeInTheDocument();
-  });
-
-  it("shows a scoped empty state naming the journey when it has nothing submitted yet", () => {
-    const married = journey({ id: "j1", life_event: "Got Married", submitted_step_numbers: [] });
+  it("renders nothing when there's nothing awaiting a response", () => {
+    const married = journey({ id: "j1", submitted_step_numbers: [] });
     useJourneys.mockReturnValue({ journeys: [married], ready: true });
 
-    render(<TrackScreen journeyId="j1" />);
+    render(<SimulateAllButton />);
 
-    expect(screen.getByText(/nothing submitted yet/i)).toBeInTheDocument();
-    expect(screen.getByText(/got married/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /back to my journeys/i }),
-    ).toHaveAttribute("href", "/journeys");
+      screen.queryByRole("button", { name: /demo: simulate all applications approved/i }),
+    ).not.toBeInTheDocument();
   });
 
-  it("shows every journey with submitted applications when unscoped", () => {
+  it("approves every awaiting application across journeys when unscoped", async () => {
     const married = journey({ id: "j1", life_event: "Got Married" });
     const baby = journey({
       id: "j2",
@@ -107,39 +88,54 @@ describe("TrackScreen", () => {
       submitted_step_numbers: [1],
     });
     useJourneys.mockReturnValue({ journeys: [married, baby], ready: true });
-
-    render(<TrackScreen />);
-
-    expect(screen.getByText("Got Married")).toBeInTheDocument();
-    expect(screen.getByText("Had a Baby")).toBeInTheDocument();
-  });
-
-  it("offers a per-journey simulate button that approves that journey's awaiting applications", async () => {
-    const married = journey({ id: "j1", life_event: "Got Married" });
-    useJourneys.mockReturnValue({ journeys: [married], ready: true });
     simulateAgencyApproval.mockResolvedValue({ acceptedStepNumbers: [] });
     markStepsDone.mockImplementation((j: Journey) => ({ ...j, status: "active" }));
 
-    render(<TrackScreen journeyId="j1" />);
+    render(<SimulateAllButton />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: /demo: simulate all agencies' approval/i }),
+      screen.getByRole("button", { name: /demo: simulate all applications approved/i }),
+    );
+
+    await waitFor(() => expect(markStepsDone).toHaveBeenCalledTimes(2));
+    expect(simulateAgencyApproval).toHaveBeenCalledWith({ journeyId: "j1" });
+    expect(simulateAgencyApproval).toHaveBeenCalledWith({ journeyId: "j2" });
+    // Multiple journeys involved -- no single completion screen to navigate to.
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("only considers the scoped journey when a journeyId is given", async () => {
+    const married = journey({ id: "j1", life_event: "Got Married" });
+    const baby = journey({
+      id: "j2",
+      life_event: "Had a Baby",
+      steps: [step({ step_number: 1, agency_name: "PSA" })],
+      submitted_step_numbers: [1],
+    });
+    useJourneys.mockReturnValue({ journeys: [married, baby], ready: true });
+    simulateAgencyApproval.mockResolvedValue({ acceptedStepNumbers: [] });
+    markStepsDone.mockImplementation((j: Journey) => ({ ...j, status: "active" }));
+
+    render(<SimulateAllButton journeyId="j1" />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /demo: simulate all applications approved/i }),
     );
 
     await waitFor(() => expect(markStepsDone).toHaveBeenCalledTimes(1));
     expect(simulateAgencyApproval).toHaveBeenCalledWith({ journeyId: "j1" });
   });
 
-  it("navigates to the completion screen when the per-journey simulate button finishes the journey", async () => {
+  it("navigates to the completion screen when it finishes the only scoped journey", async () => {
     const married = journey({ id: "j1", life_event: "Got Married" });
     useJourneys.mockReturnValue({ journeys: [married], ready: true });
     simulateAgencyApproval.mockResolvedValue({ acceptedStepNumbers: [] });
     markStepsDone.mockImplementation((j: Journey) => ({ ...j, status: "completed" }));
 
-    render(<TrackScreen journeyId="j1" />);
+    render(<SimulateAllButton journeyId="j1" />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: /demo: simulate all agencies' approval/i }),
+      screen.getByRole("button", { name: /demo: simulate all applications approved/i }),
     );
 
     await waitFor(() =>

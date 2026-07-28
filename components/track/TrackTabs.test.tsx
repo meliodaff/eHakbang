@@ -12,12 +12,6 @@ vi.mock("./TrackScreen", () => ({
     <div>Tracking content for {journeyId ?? "all"}</div>
   ),
 }));
-vi.mock("./SimulateAllButton", () => ({
-  SimulateAllButton: ({ journeyId }: { journeyId?: string }) => (
-    <div>Simulate all button for {journeyId ?? "all"}</div>
-  ),
-}));
-
 describe("TrackTabs", () => {
   it("defaults to the Tracking tab", () => {
     render(<TrackTabs journeyId="j1" />);
@@ -28,16 +22,6 @@ describe("TrackTabs", () => {
       "aria-selected",
       "true",
     );
-  });
-
-  it("shows the Simulate All button above both tabs", () => {
-    render(<TrackTabs journeyId="j1" />);
-
-    expect(screen.getByText("Simulate all button for j1")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: /requirements/i }));
-
-    expect(screen.getByText("Simulate all button for j1")).toBeInTheDocument();
   });
 
   it("switches to the Requirements tab on click", () => {

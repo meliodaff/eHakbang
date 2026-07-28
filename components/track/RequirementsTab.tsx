@@ -4,17 +4,16 @@ import Link from "next/link";
 import { useJourneys } from "@/lib/journey-store";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
+import { ApplyAllButton } from "./ApplyAllButton";
 
 /**
- * Read-only requirements checklist -- the "what does this journey need"
- * counterpart to the Tracking tab's "what have I submitted, and what's the
- * status" view. `journeyId` scopes to a single journey (e.g. "View Track"
- * from a specific My Journeys row); omitted, it lists every journey's
+ * Requirements checklist -- the "what does this journey need" counterpart
+ * to the Tracking tab's "what have I submitted, and what's the status"
+ * view. `journeyId` scopes to a single journey (e.g. "View Track" from a
+ * specific My Journeys row); omitted, it lists every journey's
  * requirements, grouped the same way the Tracking tab groups submitted
- * applications.
- *
- * Deliberately not interactive (no Auto Apply/claim/etc.) -- those actions
- * live on the journey checklist itself; this is a reference view.
+ * applications. The one interactive element is the "Apply All" button at
+ * the bottom, which submits every still-pending step shown above.
  */
 export function RequirementsTab({ journeyId }: { journeyId?: string }) {
   const { journeys, ready } = useJourneys();
@@ -119,6 +118,8 @@ export function RequirementsTab({ journeyId }: { journeyId?: string }) {
           </section>
         );
       })}
+
+      <ApplyAllButton journeyId={journeyId} />
     </div>
   );
 }

@@ -6,6 +6,12 @@ import type { Journey, JourneyStep } from "@/lib/types";
 const { useJourneys } = vi.hoisted(() => ({ useJourneys: vi.fn() }));
 vi.mock("@/lib/journey-store", () => ({ useJourneys }));
 
+vi.mock("./ApplyAllButton", () => ({
+  ApplyAllButton: ({ journeyId }: { journeyId?: string }) => (
+    <div>Apply all button for {journeyId ?? "all"}</div>
+  ),
+}));
+
 function step(overrides: Partial<JourneyStep>): JourneyStep {
   return {
     step_number: 1,
@@ -72,6 +78,15 @@ describe("RequirementsTab", () => {
     expect(screen.getAllByText("Done").length).toBe(1);
     expect(screen.getAllByText("Pending").length).toBe(1);
     expect(screen.getByText("PSA certificate")).toBeInTheDocument();
+  });
+
+  it("shows the Apply All button at the bottom, scoped to the same journey", () => {
+    const married = journey({ id: "j1", life_event: "Got Married" });
+    useJourneys.mockReturnValue({ journeys: [married], ready: true });
+
+    render(<RequirementsTab journeyId="j1" />);
+
+    expect(screen.getByText("Apply all button for j1")).toBeInTheDocument();
   });
 
   it("shows every journey's requirements when unscoped", () => {

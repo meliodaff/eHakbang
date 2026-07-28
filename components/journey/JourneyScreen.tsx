@@ -310,6 +310,7 @@ export function JourneyScreen({
         onAutoApplied={handleAutoApplied}
         onClaim={handleClaim}
         onSubmit={handleSubmit}
+        onSimulateApproval={handleComplete}
         onSubmitFields={handleSubmitFields}
         onEnrolled={handleEnrolled}
       />

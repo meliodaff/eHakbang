@@ -91,7 +91,10 @@ describe("AutoApplyBanner", () => {
     const trackLink = await screen.findByRole("link", {
       name: /track your applications/i,
     });
-    expect(trackLink).toHaveAttribute("href", "/track");
+    expect(trackLink).toHaveAttribute(
+      "href",
+      `/track?journey=${encodeURIComponent(journey().id)}`,
+    );
   });
 
   it("shows a billing stage with the itemized total when a step has a payable fee", () => {

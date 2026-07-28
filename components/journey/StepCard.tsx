@@ -6,7 +6,12 @@ import { cn } from "@/lib/cn";
 import { useT } from "@/lib/i18n";
 import { linkifyText, stripInlineLinks } from "@/lib/format-ai-text";
 import { getMissingRequiredFields } from "@/lib/journey-fields";
-import { fetchAutoApplyStatus, submitAutoApply, submitEnrollment } from "@/lib/api-client";
+import {
+  fetchAutoApplyStatus,
+  simulateAgencyApproval,
+  submitAutoApply,
+  submitEnrollment,
+} from "@/lib/api-client";
 import { ID_CATALOG } from "@/lib/id-wallet";
 import { inferRequiredExistingId } from "@/lib/journey-record-update-gate";
 import type { PrerequisiteState } from "@/lib/journey-prerequisites";
@@ -60,6 +65,7 @@ export function StepCard({
   onAutoApplied,
   onClaim,
   onSubmit,
+  onSimulateApproval,
   journeyId,
   eventId,
   fieldAnswers,
@@ -83,6 +89,12 @@ export function StepCard({
   onClaim: (stepNumber: number) => void;
   /** Persists the submitted-but-awaiting state (see journey store's markStepsSubmitted). */
   onSubmit?: (stepNumber: number) => void;
+  /**
+   * Marks this step done after a "Demo: Simulate agency approval" tap --
+   * same demo control as Track/ApplicationDetailScreen, offered here too so
+   * a pending step doesn't require leaving the journey checklist to resolve.
+   */
+  onSimulateApproval?: (stepNumber: number) => void;
   /** Stable Journey.id, used as the Auto Apply queue's key alongside step_number. */
   journeyId: string;
   eventId?: string;
@@ -108,6 +120,7 @@ export function StepCard({
     : t("Submitted — awaiting agency review");
   const [queueState, setQueueState] = useState<QueueUiState>({ kind: "checking" });
   const [enrollState, setEnrollState] = useState<EnrollUiState>({ kind: "idle" });
+  const [simulating, setSimulating] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Indicative eligibility pre-check (filing window + contributions self-check).
@@ -243,6 +256,19 @@ export function StepCard({
   function handleFieldsSubmit(answers: Record<number, Record<string, string>>) {
     onSubmitFields(answers);
     void submit(answers[step.step_number]);
+  }
+
+  // "Demo: Simulate agency approval" -- resolves a pending step without
+  // leaving the checklist. Matches Track/ApplicationDetailScreen's behavior
+  // (plain completion, not the auto-applied "claim your document" flow).
+  async function handleSimulateApproval() {
+    setSimulating(true);
+    try {
+      await simulateAgencyApproval({ journeyId });
+      onSimulateApproval?.(step.step_number);
+    } finally {
+      setSimulating(false);
+    }
   }
 
   // "Apply / Enroll here" — simulated enrollment for a blocked claim. On
@@ -560,9 +586,21 @@ export function StepCard({
             onSubmit={handleFieldsSubmit}
           />
         ) : queueState.kind === "pending" ? (
-          <p className="flex min-h-11 animate-pulse items-center justify-center gap-1.5 rounded-egov bg-egov-blue-100 px-4 py-2.5 text-sm font-semibold text-egov-blue">
-            <span aria-hidden>⏳</span> {submittedLabel}
-          </p>
+          <div className="flex flex-col gap-2">
+            <p className="flex min-h-11 animate-pulse items-center justify-center gap-1.5 rounded-egov bg-egov-blue-100 px-4 py-2.5 text-sm font-semibold text-egov-blue">
+              <span aria-hidden>⏳</span> {submittedLabel}
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleSimulateApproval()}
+              disabled={simulating}
+              className="min-h-11 rounded-egov border border-egov-blue bg-surface px-4 py-2.5 text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {simulating
+                ? t("Simulating agency approval…")
+                : t("Demo: Simulate agency approval")}
+            </button>
+          </div>
         ) : queueState.kind === "error" ? (
           <div className="flex flex-col gap-2 rounded-egov bg-background p-3">
             <p className="text-sm font-semibold text-red-600">{queueState.message}</p>

@@ -46,7 +46,7 @@ export function JourneyListItem({ journey }: { journey: Journey }) {
       <div className="flex shrink-0 flex-col items-stretch gap-2">
         {isActive ? (
           <Link
-            href="/track"
+            href={`/track?journey=${encodeURIComponent(journey.id)}&from=journeys`}
             className="min-h-10 rounded-egov border border-egov-blue px-4 py-2 text-center text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
           >
             View Track

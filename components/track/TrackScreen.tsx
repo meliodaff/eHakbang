@@ -13,12 +13,17 @@ import { useT } from "@/lib/i18n";
  * submitted to an agency, grouped by journey. Each application is a tappable
  * card that opens its detail page (all the details/steps of that application,
  * plus the demo "Simulate" control). Done applications show a checked checkbox.
+ *
+ * `journeyId` scopes the screen to a single journey (e.g. tapping "View
+ * Track" on a specific row in My Journeys) instead of showing every journey
+ * with submitted applications.
  */
-export function TrackScreen() {
+export function TrackScreen({ journeyId }: { journeyId?: string }) {
   const { journeys, ready } = useJourneys();
   const t = useT();
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const ALL_SENTINEL = "__all__";
 
   /**
    * Locally simulate every remaining agency for this journey responding and
@@ -38,9 +43,34 @@ export function TrackScreen() {
     }
   }
 
+  /**
+   * Simulates every agency across every journey shown here responding and
+   * approving, one journey at a time. Only navigates to the completion
+   * screen when there's exactly one journey involved and it's now done --
+   * with several journeys there's no single completion screen to land on.
+   */
+  async function approveEverything(
+    entries: { journey: Journey; awaiting: number[] }[],
+  ) {
+    setBusyId(ALL_SENTINEL);
+    try {
+      for (const { journey, awaiting } of entries) {
+        await simulateAgencyApproval({ journeyId: journey.id });
+        const updated = markStepsDone(journey, awaiting);
+        if (updated.status === "completed" && entries.length === 1) {
+          router.push(`/journey/complete?id=${encodeURIComponent(journey.id)}`);
+        }
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const scopedJourneys = journeyId ? journeys.filter((j) => j.id === journeyId) : journeys;
+
   // Every step whose application was submitted (awaiting a response OR already
   // approved/done), grouped by journey.
-  const tracked = journeys
+  const tracked = scopedJourneys
     .map((journey) => {
       const submitted = journey.submitted_step_numbers ?? [];
       return {
@@ -57,6 +87,34 @@ export function TrackScreen() {
   }
 
   if (tracked.length === 0) {
+    // Scoped to one journey (e.g. "View Track" from My Journeys) that hasn't
+    // had anything submitted yet -- distinct from the global empty state, so
+    // this doesn't read as "you have no journeys at all".
+    if (journeyId) {
+      const journey = journeys.find((j) => j.id === journeyId);
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+          <span aria-hidden className="text-4xl">
+            📭
+          </span>
+          <h2 className="text-lg font-bold text-foreground">
+            {t("Nothing submitted yet")}
+          </h2>
+          <p className="text-sm text-muted">
+            {journey
+              ? `${t("You haven't submitted any updates for")} "${t(journey.life_event)}" ${t("yet.")}`
+              : t("This journey hasn't submitted any updates yet.")}
+          </p>
+          <Link
+            href="/journeys"
+            className="mt-2 min-h-11 rounded-egov bg-egov-blue px-5 py-2.5 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+          >
+            {t("Back to My Journeys")}
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
         <span aria-hidden className="text-4xl">
@@ -80,8 +138,32 @@ export function TrackScreen() {
     );
   }
 
+  // Every tracked journey that still has at least one step awaiting a
+  // response, for the top-level "simulate everything" control.
+  const awaitingEntries = tracked
+    .map(({ journey, steps }) => ({
+      journey,
+      awaiting: steps
+        .filter((s) => !journey.completed_step_numbers.includes(s.step_number))
+        .map((s) => s.step_number),
+    }))
+    .filter((entry) => entry.awaiting.length > 0);
+
   return (
     <div className="flex flex-col gap-5 px-5 py-4">
+      {awaitingEntries.length > 0 && (
+        <button
+          type="button"
+          onClick={() => void approveEverything(awaitingEntries)}
+          disabled={busyId !== null}
+          className="min-h-11 rounded-egov bg-egov-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:opacity-50"
+        >
+          {busyId === ALL_SENTINEL
+            ? t("Simulating agency approval…")
+            : t("Demo: Simulate all applications approved")}
+        </button>
+      )}
+
       {tracked.map(({ journey, steps }) => {
         const isDone = (n: number) =>
           journey.completed_step_numbers.includes(n);
@@ -165,7 +247,7 @@ export function TrackScreen() {
               <button
                 type="button"
                 onClick={() => void approveAll(journey, awaiting)}
-                disabled={busyId === journey.id}
+                disabled={busyId !== null}
                 className="mt-4 min-h-11 w-full rounded-egov border border-egov-blue bg-surface px-4 py-2.5 text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:opacity-50"
               >
                 {busyId === journey.id

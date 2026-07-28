@@ -397,7 +397,7 @@ export function AutoApplyBanner({
                 Your applications are now waiting for the agencies to respond.
               </p>
               <Link
-                href="/track"
+                href={`/track?journey=${encodeURIComponent(journey.id)}`}
                 className="flex min-h-11 items-center justify-center gap-1.5 rounded-egov border border-egov-blue bg-surface px-4 py-2.5 text-sm font-semibold text-egov-blue transition-colors hover:bg-egov-blue-050 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
               >
                 Track your applications

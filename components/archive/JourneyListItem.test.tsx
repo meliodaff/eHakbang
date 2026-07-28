@@ -35,7 +35,10 @@ describe("JourneyListItem", () => {
       screen.queryByRole("link", { name: /continue/i }),
     ).not.toBeInTheDocument();
     const link = screen.getByRole("link", { name: /view track/i });
-    expect(link).toHaveAttribute("href", "/track");
+    expect(link).toHaveAttribute(
+      "href",
+      `/track?journey=${encodeURIComponent(base.id)}&from=journeys`,
+    );
   });
 
   it("shows a Complete badge and View link for archived journeys", () => {

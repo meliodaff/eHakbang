@@ -21,6 +21,7 @@ export function JourneyView({
   onAutoApplied,
   onClaim,
   onSubmit,
+  onSimulateApproval,
   onSubmitFields,
   onEnrolled,
 }: {
@@ -40,6 +41,8 @@ export function JourneyView({
   onClaim: (stepNumber: number) => void;
   /** Persists a step's submitted-but-awaiting state (see markStepsSubmitted). */
   onSubmit: (stepNumber: number) => void;
+  /** Marks a pending step done after "Demo: Simulate agency approval". */
+  onSimulateApproval?: (stepNumber: number) => void;
   /** Persists required_fields answers submitted from a step's Auto Apply flow. */
   onSubmitFields: (answers: Record<number, Record<string, string>>) => void;
   /** Records that the citizen enrolled for (or already holds) a required ID. */
@@ -70,6 +73,7 @@ export function JourneyView({
             onAutoApplied={onAutoApplied}
             onClaim={onClaim}
             onSubmit={onSubmit}
+            onSimulateApproval={onSimulateApproval}
             journeyId={journey.id}
             eventId={journey.event_id}
             fieldAnswers={journey.field_answers}

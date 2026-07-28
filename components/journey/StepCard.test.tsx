@@ -3,15 +3,18 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import { StepCard } from "./StepCard";
 import type { JourneyStep } from "@/lib/types";
 
-const { submitAutoApply, fetchAutoApplyStatus, submitEnrollment } = vi.hoisted(() => ({
-  submitAutoApply: vi.fn(),
-  fetchAutoApplyStatus: vi.fn(),
-  submitEnrollment: vi.fn(),
-}));
+const { submitAutoApply, fetchAutoApplyStatus, submitEnrollment, simulateAgencyApproval } =
+  vi.hoisted(() => ({
+    submitAutoApply: vi.fn(),
+    fetchAutoApplyStatus: vi.fn(),
+    submitEnrollment: vi.fn(),
+    simulateAgencyApproval: vi.fn(),
+  }));
 vi.mock("@/lib/api-client", () => ({
   submitAutoApply,
   fetchAutoApplyStatus,
   submitEnrollment,
+  simulateAgencyApproval,
 }));
 
 const recordStep: JourneyStep = {
@@ -98,6 +101,7 @@ describe("StepCard", () => {
     submitAutoApply.mockReset();
     fetchAutoApplyStatus.mockReset();
     submitEnrollment.mockReset();
+    simulateAgencyApproval.mockReset().mockResolvedValue({ acceptedStepNumbers: [] });
     baseProps.onSubmitFields.mockReset();
     fetchAutoApplyStatus.mockResolvedValue(null);
     vi.useFakeTimers();
@@ -211,6 +215,41 @@ describe("StepCard", () => {
       await vi.advanceTimersByTimeAsync(3000);
     });
     expect(onAutoApplied).toHaveBeenCalledWith(1);
+  });
+
+  it("offers a Demo: Simulate agency approval button while a step is pending, and calls onSimulateApproval", async () => {
+    submitAutoApply.mockResolvedValue({
+      journeyId: baseProps.journeyId,
+      stepNumber: 1,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      acceptedAt: null,
+    });
+    const onSimulateApproval = vi.fn();
+
+    render(
+      <StepCard
+        step={recordStep}
+        completed={false}
+        onAutoApplied={onAutoApplied}
+        onClaim={onClaim}
+        onSimulateApproval={onSimulateApproval}
+        {...baseProps}
+      />,
+    );
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole("button", { name: /auto apply/i }));
+    await act(async () => {});
+
+    const simulateButton = screen.getByRole("button", {
+      name: /demo: simulate agency approval/i,
+    });
+    fireEvent.click(simulateButton);
+    await act(async () => {});
+
+    expect(simulateAgencyApproval).toHaveBeenCalledWith({ journeyId: baseProps.journeyId });
+    expect(onSimulateApproval).toHaveBeenCalledWith(1);
   });
 
   it("resumes polling on mount when a pending queue entry already exists", async () => {

@@ -15,6 +15,24 @@ interface EgovPayConfig {
 
 let cachedConfig: EgovPayConfig | null = null;
 
+/**
+ * eGovPay expects the API token in the `X-eGovPay-Token` header WITH its
+ * environment prefix (e.g. `test_<key>` for sandbox); `computeDigest()` then
+ * strips that prefix to recover the HMAC key. A recurring setup mistake is
+ * storing only the bare key with no prefix, which the gateway rejects with
+ * `401 invalid_api_header`. To be resilient: if the configured token has no
+ * `<env>_` prefix at all, assume a sandbox token and add `test_`. A token that
+ * already carries a prefix (`test_...`, and by extension a live `..._` form) is
+ * left untouched, so going live only requires storing the real prefixed token.
+ */
+function normalizeEgovPayToken(raw: string): string {
+  if (/^[a-z]+_/.test(raw)) return raw;
+  console.warn(
+    "[egovpay] EGOVPAY_API_TOKEN has no environment prefix; assuming sandbox and using `test_` prefix for the X-eGovPay-Token header.",
+  );
+  return `test_${raw}`;
+}
+
 function getConfig(): EgovPayConfig {
   if (cachedConfig) return cachedConfig;
   const baseUrl = process.env.EGOVPAY_BASE_URL;
@@ -25,7 +43,7 @@ function getConfig(): EgovPayConfig {
       "eGovPay is not configured (EGOVPAY_BASE_URL / EGOVPAY_API_TOKEN / EGOVPAY_SETTLEMENT_TEMPLATE_UUID)",
     );
   }
-  cachedConfig = { baseUrl, token, settlementTemplateUuid };
+  cachedConfig = { baseUrl, token: normalizeEgovPayToken(token), settlementTemplateUuid };
   return cachedConfig;
 }
 

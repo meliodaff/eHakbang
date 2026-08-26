@@ -9,6 +9,7 @@ import {
   syncJourneyToSupabase,
 } from "./journey-sync";
 import { notifyStepUpdate } from "./api-client";
+import { enrichOfficialFees } from "./journey-fee-enrichment";
 
 /**
  * Client-side journey persistence (PRD FR-08/09). localStorage is the
@@ -31,6 +32,7 @@ const CHANGE_EVENT = "ehakbang:journeys-changed";
 function migrate(journey: Journey): Journey {
   return {
     ...journey,
+    steps: enrichOfficialFees(journey.steps ?? []),
     auto_applied_step_numbers: journey.auto_applied_step_numbers ?? [],
     claimed_step_numbers: journey.claimed_step_numbers ?? [],
     submitted_step_numbers: journey.submitted_step_numbers ?? [],

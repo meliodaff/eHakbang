@@ -12,6 +12,7 @@ import {
 import { customEventId } from "@/lib/custom-event";
 import { inferEligibility } from "@/lib/journey-eligibility";
 import { hasUsableJourneySteps } from "@/lib/journey-validity";
+import { enrichOfficialFees } from "@/lib/journey-fee-enrichment";
 
 /**
  * Cache-or-regenerate layer for AI-generated journey requirements. Staleness
@@ -87,12 +88,14 @@ export function journeyId(eventId: string): string {
 
 /** Fills in derived, relational step fields the model doesn't reliably set itself. */
 function decorateSteps(steps: JourneyStep[]): JourneyStep[] {
-  return steps.map((step) => ({
-    ...step,
-    fulfills_id: inferFulfillsId(step),
-    prerequisite: step.prerequisite ?? inferPrerequisite(step),
-    eligibility: step.eligibility ?? inferEligibility(step),
-  }));
+  return enrichOfficialFees(
+    steps.map((step) => ({
+      ...step,
+      fulfills_id: inferFulfillsId(step),
+      prerequisite: step.prerequisite ?? inferPrerequisite(step),
+      eligibility: step.eligibility ?? inferEligibility(step),
+    })),
+  );
 }
 
 function seedResult(eventId: string): JourneyResult {

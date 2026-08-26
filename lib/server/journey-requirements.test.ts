@@ -184,6 +184,32 @@ describe("getOrRegenerateCustomJourney", () => {
     generateJourneyWithEgovAI.mockReset();
   });
 
+  it("adds the official DFA fee to a generated passport step with no fee", async () => {
+    generateJourneyWithEgovAI.mockResolvedValue({
+      ...AI_GENERATED,
+      title: "Applying for a Philippine Passport",
+      steps: [
+        {
+          ...AI_GENERATED.steps[0],
+          agency_name: "Department of Foreign Affairs",
+          agency_code: "DFA",
+          step_title: "Apply for a Philippine passport",
+          fee: null,
+          egov_service_name: "Passport Application",
+          egov_search_term: "DFA passport application",
+        },
+      ],
+    });
+
+    const result = await getOrRegenerateCustomJourney({
+      text: "I need to apply for a Philippine passport",
+    });
+
+    expect(result.journey.steps[0].fee).toEqual(
+      expect.objectContaining({ amount: "₱950", currency: "PHP" }),
+    );
+  });
+
   it("derives the journey id from the canonical slug, not the raw text, when provided", async () => {
     generateJourneyWithEgovAI.mockResolvedValue(AI_GENERATED);
 

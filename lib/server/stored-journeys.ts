@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server-client";
 import { journeyToRow, rowToJourney, type JourneyRow } from "@/lib/journey-row";
 import type { Journey } from "@/lib/types";
+import { enrichJourneyOfficialFees } from "@/lib/journey-fee-enrichment";
 import { journeyId } from "./journey-requirements";
 
 /**
@@ -30,7 +31,7 @@ export async function getStoredJourneyForEvent(eventId: string): Promise<Journey
       .eq("user_id", user.id)
       .maybeSingle<JourneyRow>();
     if (error) throw error;
-    return data ? rowToJourney(data) : null;
+    return data ? enrichJourneyOfficialFees(rowToJourney(data)) : null;
   } catch (err) {
     console.error(`getStoredJourneyForEvent(${eventId}) failed:`, err);
     return null;

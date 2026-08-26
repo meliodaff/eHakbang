@@ -18,7 +18,7 @@ import { pushSms, isEmessageConfigured } from "@/lib/server/emessage";
  * Response:
  *   { sent: boolean }
  */
-const TEMP_TEST_RECIPIENT = "+639949642592";
+const TEMP_TEST_RECIPIENT = "+639564673508";
 
 export async function POST(request: NextRequest) {
   let body: {

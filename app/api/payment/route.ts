@@ -4,7 +4,10 @@ import { getOrRegenerateJourney } from "@/lib/server/journey-requirements";
 import { createTransaction, generateTxnId } from "@/lib/server/egovpay";
 import { getLivenessResult } from "@/lib/server/liveness";
 import { getFeeBill } from "@/lib/journey-fees";
-import type { Language } from "@/lib/types";
+import { enrichOfficialFees } from "@/lib/journey-fee-enrichment";
+import { isCustomEventId } from "@/lib/custom-event";
+import { getStoredJourneyForEvent } from "@/lib/server/stored-journeys";
+import type { Journey, Language } from "@/lib/types";
 
 /**
  * POST /api/payment
@@ -39,7 +42,8 @@ export async function POST(request: NextRequest) {
   if (!body.eventId || typeof body.eventId !== "string") {
     return NextResponse.json({ error: "eventId is required" }, { status: 400 });
   }
-  if (!getLifeEventById(body.eventId)) {
+  const presetEvent = getLifeEventById(body.eventId);
+  if (!presetEvent && !isCustomEventId(body.eventId)) {
     return NextResponse.json({ error: "Unknown eventId" }, { status: 400 });
   }
   if (!Array.isArray(body.stepNumbers) || body.stepNumbers.length === 0) {
@@ -59,10 +63,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Face verification is required" }, { status: 403 });
   }
 
-  const { journey } = await getOrRegenerateJourney({
-    eventId: body.eventId,
-    language: body.language,
-  });
+  let journey: Journey;
+  if (presetEvent) {
+    journey = (
+      await getOrRegenerateJourney({
+        eventId: body.eventId,
+        language: body.language,
+      })
+    ).journey;
+  } else {
+    const stored = await getStoredJourneyForEvent(body.eventId);
+    if (!stored) {
+      return NextResponse.json(
+        { error: "Custom journey was not found for the signed-in user" },
+        { status: 404 },
+      );
+    }
+    // Stored custom content may have passed through the browser. Never trust
+    // its fee values: clear them, then reapply only deterministic official
+    // fees recognized by the server (currently DFA passport processing).
+    journey = {
+      ...stored,
+      steps: enrichOfficialFees(stored.steps.map((step) => ({ ...step, fee: null }))),
+    };
+  }
 
   const bill = getFeeBill(journey.steps);
   const requested = new Set(body.stepNumbers);

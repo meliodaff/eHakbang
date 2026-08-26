@@ -28,6 +28,33 @@ describe("journey-store persistence", () => {
     expect(getAllJourneys()).toEqual([]);
   });
 
+  it("repairs a stored DFA passport step that has no fee", () => {
+    const catalog = EVENT_JOURNEYS["started-a-business"];
+    const passport = {
+      ...catalog,
+      id: "ehakbang:journey:event:custom:passport",
+      event_id: "custom:passport",
+      steps: [
+        {
+          ...catalog.steps[0],
+          step_number: 1,
+          agency_name: "Department of Foreign Affairs",
+          agency_code: "DFA",
+          step_title: "Apply for a Philippine passport",
+          fee: null,
+          egov_service_name: "Passport Application",
+          egov_search_term: "DFA passport application",
+        },
+      ],
+      total_steps: 1,
+    };
+    window.localStorage.setItem(KEY, JSON.stringify([passport]));
+
+    expect(getStoredJourney(passport.id)?.steps[0].fee).toEqual(
+      expect.objectContaining({ amount: "₱950", currency: "PHP" }),
+    );
+  });
+
   it("replaces an existing empty journey only when repair is explicitly requested", () => {
     const catalog = EVENT_JOURNEYS["started-a-business"];
     const empty = { ...catalog, steps: [], total_steps: 0 };

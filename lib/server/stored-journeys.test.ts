@@ -74,6 +74,40 @@ describe("getStoredJourneyForEvent", () => {
     expect(client.builder.eq).toHaveBeenCalledWith("user_id", "u1");
   });
 
+  it("repairs a stored DFA passport journey that has no fee", async () => {
+    const passportRow = {
+      ...ROW,
+      id: "ehakbang:journey:event:custom:passport",
+      event_id: "custom:passport",
+      steps: [
+        {
+          step_number: 1,
+          agency_name: "Department of Foreign Affairs",
+          agency_code: "DFA",
+          step_title: "Apply for a Philippine passport",
+          step_type: "record_update",
+          reason: "Schedule the application online.",
+          documents_required: [],
+          estimated_time: "Check with agency",
+          important_note: null,
+          fee: null,
+          egov_service_name: "Passport Application",
+          egov_search_term: "DFA passport application",
+          required_fields: [],
+        },
+      ],
+    };
+    createClient.mockResolvedValue(
+      makeSupabaseMock({ user: { id: "u1" }, row: passportRow }),
+    );
+
+    const journey = await getStoredJourneyForEvent("custom:passport");
+
+    expect(journey?.steps[0].fee).toEqual(
+      expect.objectContaining({ amount: "₱950", currency: "PHP" }),
+    );
+  });
+
   it("returns null when nothing has been started for this event yet", async () => {
     createClient.mockResolvedValue(makeSupabaseMock({ user: { id: "u1" }, row: null }));
 

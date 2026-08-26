@@ -17,8 +17,11 @@ function buildFullName(profile: EgovProfile): string {
  * `admin.generateLink({ type: "magiclink" })` creates the auth.users row if
  * it doesn't exist yet (confirmed via the installed @supabase/auth-js types
  * — magiclink handles creation for signup/invite/magiclink), and the
- * resulting `hashed_token` is verified via `auth.verifyOtp` on the
- * cookie-aware SSR client to actually set the session cookie.
+ * resulting `hashed_token` is verified with `type: "email"` via
+ * `auth.verifyOtp` on the cookie-aware SSR client to actually set the session
+ * cookie. Supabase still calls the generated link type `magiclink`, but its
+ * current verification API deprecates `magiclink` and uses `email` for both
+ * email sign-up and sign-in token hashes.
  *
  * eGov already supplies full name, email, and mobile number in one profile
  * fetch (unlike Google, which only gives name+email) — so unlike the Google
@@ -53,15 +56,25 @@ export async function completeEgovSignIn(exchangeCode: string): Promise<{ error?
     },
   });
   if (linkError) {
+    console.error("[egov-session] generateLink failed:", {
+      message: linkError.message,
+      status: linkError.status,
+      code: linkError.code,
+    });
     return { error: "Could not create your session. Please try again." };
   }
 
   const supabase = await createClient();
   const { error: verifyError } = await supabase.auth.verifyOtp({
     token_hash: linkData.properties.hashed_token,
-    type: "magiclink",
+    type: "email",
   });
   if (verifyError) {
+    console.error("[egov-session] verifyOtp failed:", {
+      message: verifyError.message,
+      status: verifyError.status,
+      code: verifyError.code,
+    });
     return { error: "Could not create your session. Please try again." };
   }
 

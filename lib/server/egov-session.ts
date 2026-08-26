@@ -1,7 +1,45 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server-client";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { exchangeEgovCode, fetchEgovProfile, type EgovProfile } from "./egov-sso";
+import {
+  exchangeEgovCode,
+  fetchEgovProfile,
+  EgovSsoError,
+  type EgovProfile,
+} from "./egov-sso";
+
+/**
+ * Every distinct way eGov sign-in can fail, and the citizen-facing copy for
+ * each. Shared between the sign-in entry points (dev form action + prod
+ * callback route) and the /login page so the same reason always renders the
+ * same message. `reason` codes travel through the callback redirect as
+ * `?egov_error=<reason>`; `egovSignInMessage()` maps them back for display.
+ */
+export type EgovSignInReason =
+  | "config"
+  | "expired"
+  | "unavailable"
+  | "no_email"
+  | "session"
+  | "profile_save";
+
+export const EGOV_SIGNIN_MESSAGES: Record<EgovSignInReason, string> = {
+  config:
+    "eGov sign-in is temporarily unavailable. Please try another sign-in method or try again later.",
+  expired: "Your eGov sign-in session has expired. Please start again from the eGov login.",
+  unavailable: "eGov is temporarily unavailable. Please try again in a moment.",
+  no_email: "Your eGov account has no email on file, so it can't be used to sign in.",
+  session: "We couldn't complete your sign-in. Please try again.",
+  profile_save: "Signed in, but saving your profile failed. Please contact support.",
+};
+
+/** Maps a (possibly unknown) reason code to display copy, defaulting to a safe generic. */
+export function egovSignInMessage(reason: string | undefined | null): string {
+  if (reason && reason in EGOV_SIGNIN_MESSAGES) {
+    return EGOV_SIGNIN_MESSAGES[reason as EgovSignInReason];
+  }
+  return EGOV_SIGNIN_MESSAGES.session;
+}
 
 function buildFullName(profile: EgovProfile): string {
   return [profile.first_name, profile.middle_name, profile.last_name]
@@ -32,17 +70,21 @@ function buildFullName(profile: EgovProfile): string {
  * national ID, passport, signature, etc.) is used only transiently to
  * derive full_name/phone and is not persisted.
  */
-export async function completeEgovSignIn(exchangeCode: string): Promise<{ error?: string }> {
+export async function completeEgovSignIn(
+  exchangeCode: string,
+): Promise<{ error?: string; reason?: EgovSignInReason }> {
   let profile: EgovProfile;
   try {
     const accessToken = await exchangeEgovCode(exchangeCode);
     profile = await fetchEgovProfile(accessToken);
-  } catch {
-    return { error: "Could not verify your eGov identity. Please try again." };
+  } catch (err) {
+    console.error("[egov-session] eGov identity verification failed:", err);
+    const reason: EgovSignInReason = err instanceof EgovSsoError ? err.reason : "unavailable";
+    return { error: EGOV_SIGNIN_MESSAGES[reason], reason };
   }
 
   if (!profile.email) {
-    return { error: "Your eGov account has no email on file, so it can't be used to sign in." };
+    return { error: EGOV_SIGNIN_MESSAGES.no_email, reason: "no_email" };
   }
 
   const fullName = buildFullName(profile) || profile.email;
@@ -61,7 +103,7 @@ export async function completeEgovSignIn(exchangeCode: string): Promise<{ error?
       status: linkError.status,
       code: linkError.code,
     });
-    return { error: "Could not create your session. Please try again." };
+    return { error: EGOV_SIGNIN_MESSAGES.session, reason: "session" };
   }
 
   const supabase = await createClient();
@@ -75,7 +117,7 @@ export async function completeEgovSignIn(exchangeCode: string): Promise<{ error?
       status: verifyError.status,
       code: verifyError.code,
     });
-    return { error: "Could not create your session. Please try again." };
+    return { error: EGOV_SIGNIN_MESSAGES.session, reason: "session" };
   }
 
   const userId = linkData.user.id;
@@ -89,7 +131,7 @@ export async function completeEgovSignIn(exchangeCode: string): Promise<{ error?
     { onConflict: "id" },
   );
   if (profileError) {
-    return { error: "Signed in, but saving your profile failed. Please contact support." };
+    return { error: EGOV_SIGNIN_MESSAGES.profile_save, reason: "profile_save" };
   }
 
   return {};

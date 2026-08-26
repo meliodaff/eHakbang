@@ -16,6 +16,16 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./egov-sso", () => ({
   exchangeEgovCode: mocks.exchangeEgovCode,
   fetchEgovProfile: mocks.fetchEgovProfile,
+  EgovSsoError: class EgovSsoError extends Error {
+    reason: string;
+    status?: number;
+    constructor(reason: string, message: string, status?: number) {
+      super(message);
+      this.name = "EgovSsoError";
+      this.reason = reason;
+      this.status = status;
+    }
+  },
 }));
 
 vi.mock("@/lib/supabase/server-client", () => ({

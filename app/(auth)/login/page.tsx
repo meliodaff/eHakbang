@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { EhakbangLogo } from "@/components/brand/Logo";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { createClient } from "@/lib/supabase/server-client";
+import { egovSignInMessage } from "@/lib/server/egov-session";
 
 export default async function LoginPage({
   searchParams,
@@ -30,9 +31,9 @@ export default async function LoginPage({
         <EhakbangLogo className="scale-125" />
         <p className="text-sm text-muted">Sign in to continue</p>
       </div>
-      {egovError === "1" && (
+      {egovError && (
         <p className="rounded-egov bg-red-50 px-4 py-2.5 text-sm text-egov-danger">
-          Could not sign in with eGov. Please try again.
+          {egovSignInMessage(egovError === "1" ? undefined : egovError)}
         </p>
       )}
       {googleError === "1" && (

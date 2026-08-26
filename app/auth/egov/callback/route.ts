@@ -9,9 +9,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login`);
   }
 
-  const { error } = await completeEgovSignIn(exchangeCode);
+  const { error, reason } = await completeEgovSignIn(exchangeCode);
   if (error) {
-    return NextResponse.redirect(`${origin}/login?egov_error=1`);
+    return NextResponse.redirect(`${origin}/login?egov_error=${reason ?? "session"}`);
   }
 
   return NextResponse.redirect(`${origin}/`);

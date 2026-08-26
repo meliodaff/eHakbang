@@ -53,10 +53,37 @@ export type EgovProfile = {
   tin_id?: string | null;
 };
 
+/**
+ * Why an eGov SSO call failed, in terms the sign-in UI can act on:
+ * - `config`      — a required EGOV_SSO_* env var is missing (operator error;
+ *                   the citizen can't fix it, so we surface it as unavailable).
+ * - `expired`     — eGov rejected the exchange (4xx): the one-time code is
+ *                   used/expired/invalid, or partner creds are wrong. The
+ *                   actionable path for the citizen is to start again.
+ * - `unavailable` — eGov is down or unreachable (5xx / network), retry later.
+ */
+export type EgovSsoErrorReason = "config" | "expired" | "unavailable";
+
+export class EgovSsoError extends Error {
+  readonly reason: EgovSsoErrorReason;
+  readonly status?: number;
+  constructor(reason: EgovSsoErrorReason, message: string, status?: number) {
+    super(message);
+    this.name = "EgovSsoError";
+    this.reason = reason;
+    this.status = status;
+  }
+}
+
 function requireEnv(name: string): string {
   const value = process.env[name];
-  if (!value) throw new Error(`${name} is not configured`);
+  if (!value) throw new EgovSsoError("config", `${name} is not configured`);
   return value;
+}
+
+/** Classifies an eGov non-2xx HTTP status into a citizen-actionable reason. */
+function reasonForStatus(status: number): EgovSsoErrorReason {
+  return status >= 500 ? "unavailable" : "expired";
 }
 
 /** Exchanges a one-time eGov exchange_code for an access_token. */
@@ -65,22 +92,34 @@ export async function exchangeEgovCode(exchangeCode: string): Promise<string> {
   const partnerCode = requireEnv("EGOV_SSO_PARTNER_CODE");
   const partnerSecret = requireEnv("EGOV_SSO_PARTNER_SECRET");
 
-  const res = await fetch(`${baseUrl}/api/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      exchange_code: exchangeCode,
-      scope: "SSO_AUTHENTICATION",
-      partner_code: partnerCode,
-      partner_secret: partnerSecret,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/api/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        exchange_code: exchangeCode,
+        scope: "SSO_AUTHENTICATION",
+        partner_code: partnerCode,
+        partner_secret: partnerSecret,
+      }),
+    });
+  } catch (err) {
+    console.error("[egov-sso] token exchange fetch failed (network/DNS/base URL):", err);
+    throw new EgovSsoError("unavailable", "eGov token exchange request failed");
+  }
   if (!res.ok) {
-    throw new Error(`eGov token exchange failed (${res.status})`);
+    const text = await res.text().catch(() => "<no body>");
+    console.error(`[egov-sso] token exchange non-2xx (${res.status}):`, text);
+    throw new EgovSsoError(
+      reasonForStatus(res.status),
+      `eGov token exchange failed (${res.status}): ${text}`,
+      res.status,
+    );
   }
   const data = (await res.json()) as { access_token?: string };
   if (!data.access_token) {
-    throw new Error("eGov token exchange returned no access_token");
+    throw new EgovSsoError("unavailable", "eGov token exchange returned no access_token");
   }
   return data.access_token;
 }
@@ -89,16 +128,28 @@ export async function exchangeEgovCode(exchangeCode: string): Promise<string> {
 export async function fetchEgovProfile(accessToken: string): Promise<EgovProfile> {
   const baseUrl = requireEnv("EGOV_SSO_BASE_URL");
 
-  const res = await fetch(`${baseUrl}/api/partner/sso_authentication`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/api/partner/sso_authentication`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  } catch (err) {
+    console.error("[egov-sso] profile fetch failed (network/DNS/base URL):", err);
+    throw new EgovSsoError("unavailable", "eGov profile fetch request failed");
+  }
   if (!res.ok) {
-    throw new Error(`eGov profile fetch failed (${res.status})`);
+    const text = await res.text().catch(() => "<no body>");
+    console.error(`[egov-sso] profile fetch non-2xx (${res.status}):`, text);
+    throw new EgovSsoError(
+      reasonForStatus(res.status),
+      `eGov profile fetch failed (${res.status}): ${text}`,
+      res.status,
+    );
   }
   const json = (await res.json()) as { data?: EgovProfile };
   if (!json.data) {
-    throw new Error("eGov profile fetch returned no data");
+    throw new EgovSsoError("unavailable", "eGov profile fetch returned no data");
   }
   return json.data;
 }

@@ -6,7 +6,7 @@ import type { IdType } from "@/lib/types";
  * The signed-in citizen's saved ID Wallet selection (see
  * `lib/id-wallet-sync.ts` for the client-side "Save changes" write path),
  * read server-side so AI journey generation can personalize which
- * record-update steps apply (`lib/server/openai-journey.ts`). Uses the
+ * record-update steps apply (`lib/server/egov-ai-journey.ts`). Uses the
  * session-aware (RLS-respecting) Supabase client, so this only ever returns
  * the calling citizen's own row.
  *

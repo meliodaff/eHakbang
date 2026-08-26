@@ -155,12 +155,27 @@ function persist(
  * Persist a freshly generated journey the moment the citizen starts it --
  * tapping a preset "Piliin ang life event" card or submitting the flexible
  * AI textbox -- rather than waiting for their first step interaction. Safe
- * to call speculatively: no-ops (returns the existing record unchanged) if
- * this journey id is already stored, so it never clobbers progress.
+ * to call speculatively: by default it returns an existing record unchanged,
+ * so progress is never clobbered. `replaceExisting` is reserved for repairing
+ * a persisted journey that failed validity checks (for example, zero steps).
  */
-export function startJourney(journey: Journey): Journey {
+export function startJourney(
+  journey: Journey,
+  options: { replaceExisting?: boolean } = {},
+): Journey {
   const existing = getStoredJourney(journey.id);
-  if (existing) return existing;
+  if (existing && !options.replaceExisting) return existing;
+
+  if (existing && options.replaceExisting) {
+    const list = read();
+    const idx = list.findIndex((item) => item.id === journey.id);
+    const replacement = migrate(journey);
+    list[idx] = replacement;
+    write(list);
+    void syncJourneyToSupabase(replacement);
+    return replacement;
+  }
+
   return persist(
     journey,
     journey.completed_step_numbers,

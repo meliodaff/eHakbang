@@ -8,6 +8,7 @@ import {
 import { getHeldIdsForCurrentUser } from "@/lib/server/id-wallet";
 import { getStoredJourneyForEvent } from "@/lib/server/stored-journeys";
 import { customEventId } from "@/lib/custom-event";
+import { hasUsableJourneySteps } from "@/lib/journey-validity";
 import type { Journey } from "@/lib/types";
 
 export default async function JourneyPage({
@@ -24,28 +25,30 @@ export default async function JourneyPage({
     // generating a whole new set of requirements for it (see
     // lib/server/stored-journeys.ts) -- heldIds is only fetched when a fresh
     // generation is actually needed.
-    initialJourney =
-      (await getStoredJourneyForEvent(event)) ??
-      (
-        await getOrRegenerateJourney({
-          eventId: event,
-          language: "en",
-          heldIds: await getHeldIdsForCurrentUser(),
-        })
-      ).journey;
+    const storedJourney = await getStoredJourneyForEvent(event);
+    initialJourney = hasUsableJourneySteps(storedJourney)
+      ? storedJourney
+      : (
+          await getOrRegenerateJourney({
+            eventId: event,
+            language: "en",
+            heldIds: await getHeldIdsForCurrentUser(),
+          })
+        ).journey;
   } else if (q?.trim()) {
     const text = q.trim();
     const eventId = customEventId(slug?.trim() || text);
-    initialJourney =
-      (await getStoredJourneyForEvent(eventId)) ??
-      (
-        await getOrRegenerateCustomJourney({
-          text,
-          slug,
-          language: "en",
-          heldIds: await getHeldIdsForCurrentUser(),
-        })
-      ).journey;
+    const storedJourney = await getStoredJourneyForEvent(eventId);
+    initialJourney = hasUsableJourneySteps(storedJourney)
+      ? storedJourney
+      : (
+          await getOrRegenerateCustomJourney({
+            text,
+            slug,
+            language: "en",
+            heldIds: await getHeldIdsForCurrentUser(),
+          })
+        ).journey;
   }
 
   return (

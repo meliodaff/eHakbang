@@ -6,13 +6,13 @@ import { getJourneyByEventId } from "@/lib/event-journeys";
 // out so this server-side module can still be unit tested here.
 vi.mock("server-only", () => ({}));
 
-const { generateJourneyWithOpenAI } = vi.hoisted(() => ({
-  generateJourneyWithOpenAI: vi.fn(),
+const { generateJourneyWithEgovAI } = vi.hoisted(() => ({
+  generateJourneyWithEgovAI: vi.fn(),
 }));
-vi.mock("./openai-journey", () => ({
-  generateJourneyWithOpenAI,
+vi.mock("./egov-ai-journey", () => ({
+  generateJourneyWithEgovAI,
   // Pass-through inference stubs; decoration behaviour is covered by
-  // openai-journey.test.ts and journey-eligibility.test.ts.
+  // egov-ai-journey.test.ts and journey-eligibility tests.
   inferFulfillsId: () => undefined,
   inferPrerequisite: () => null,
 }));
@@ -40,7 +40,7 @@ function makeSupabaseMock(opts: { existing?: unknown | null } = {}) {
 const AI_GENERATED = {
   summary: "AI summary",
   title: "AI Title",
-  model: "gpt-4.1",
+  model: "egov-ai-assistant",
   requires_evidence: false,
   evidence_title: null,
   evidence_description: null,
@@ -64,7 +64,7 @@ const AI_GENERATED = {
 
 describe("getOrRegenerateJourney", () => {
   beforeEach(() => {
-    generateJourneyWithOpenAI.mockReset();
+    generateJourneyWithEgovAI.mockReset();
     getSupabaseServerClient.mockReset();
   });
 
@@ -81,39 +81,89 @@ describe("getOrRegenerateJourney", () => {
       benefit_claims: 1,
       updated_at: new Date().toISOString(), // fresh
     };
-    getSupabaseServerClient.mockReturnValue(makeSupabaseMock({ existing: cached }).from(""));
-    // Patch: mockReturnValue of the root `from` call
     const mock = makeSupabaseMock({ existing: cached });
     getSupabaseServerClient.mockReturnValue(mock);
 
     const result = await getOrRegenerateJourney({ eventId: "retired" });
 
-    expect(generateJourneyWithOpenAI).not.toHaveBeenCalled();
+    expect(generateJourneyWithEgovAI).not.toHaveBeenCalled();
     expect(result.regenerated).toBe(false);
     expect(result.journey.summary).toBe("Cached summary");
   });
 
-  it("regenerates via OpenAI when there's no cached row, and upserts the result", async () => {
+  it("ignores a fresh cached row with no steps and regenerates it", async () => {
+    const emptyCached = {
+      event_id: "started-a-business",
+      language: "en",
+      emoji: "🏪",
+      life_event: "Started a Business",
+      summary: "Empty cached summary",
+      steps: [],
+      total_steps: 0,
+      record_updates: 0,
+      benefit_claims: 0,
+      updated_at: new Date().toISOString(),
+    };
+    const mock = makeSupabaseMock({ existing: emptyCached });
+    getSupabaseServerClient.mockReturnValue(mock);
+    generateJourneyWithEgovAI.mockResolvedValue(AI_GENERATED);
+
+    const result = await getOrRegenerateJourney({ eventId: "started-a-business" });
+
+    expect(generateJourneyWithEgovAI).toHaveBeenCalledOnce();
+    expect(result.source).toBe("ai");
+    expect(result.journey.steps).toHaveLength(1);
+    expect(mock.builder.upsert).toHaveBeenCalled();
+  });
+
+  it("regenerates via eGov AI when there's no cached row, and upserts the result", async () => {
     const mock = makeSupabaseMock({ existing: null });
     getSupabaseServerClient.mockReturnValue(mock);
-    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+    generateJourneyWithEgovAI.mockResolvedValue(AI_GENERATED);
 
     const result = await getOrRegenerateJourney({ eventId: "retired" });
 
-    expect(generateJourneyWithOpenAI).toHaveBeenCalledWith(
+    expect(generateJourneyWithEgovAI).toHaveBeenCalledWith(
       expect.objectContaining({ eventId: "retired", language: "en", heldIds: [] }),
     );
     expect(result.source).toBe("ai");
     expect(result.regenerated).toBe(true);
     // Verify upsert was called
-    expect(mock.builder.upsert).toHaveBeenCalled();
+    expect(mock.builder.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ model: "egov-ai-assistant" }),
+      { onConflict: "event_id,language" },
+    );
   });
 
-  it("falls back to the seed journey when both cache and OpenAI fail", async () => {
+  it("falls back to the preset seed when the generator returns no steps", async () => {
+    const mock = makeSupabaseMock({ existing: null });
+    getSupabaseServerClient.mockReturnValue(mock);
+    generateJourneyWithEgovAI.mockResolvedValue({ ...AI_GENERATED, steps: [] });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await getOrRegenerateJourney({ eventId: "started-a-business" });
+
+    expect(result.source).toBe("seed");
+    expect(result.regenerated).toBe(false);
+    expect(result.journey.steps.length).toBeGreaterThan(0);
+    expect(result.journey.steps).toHaveLength(
+      getJourneyByEventId("started-a-business")!.steps.length,
+    );
+    expect(mock.builder.upsert).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("failed, using fallback"),
+    );
+    expect(error).not.toHaveBeenCalled();
+    warn.mockRestore();
+    error.mockRestore();
+  });
+
+  it("falls back to the seed journey when both cache and eGov AI fail", async () => {
     getSupabaseServerClient.mockImplementation(() => {
       throw new Error("Supabase is not configured");
     });
-    generateJourneyWithOpenAI.mockRejectedValue(new Error("OpenAI error"));
+    generateJourneyWithEgovAI.mockRejectedValue(new Error("eGov AI error"));
 
     const result = await getOrRegenerateJourney({ eventId: "retired" });
 
@@ -131,11 +181,11 @@ describe("getOrRegenerateJourney", () => {
 
 describe("getOrRegenerateCustomJourney", () => {
   beforeEach(() => {
-    generateJourneyWithOpenAI.mockReset();
+    generateJourneyWithEgovAI.mockReset();
   });
 
   it("derives the journey id from the canonical slug, not the raw text, when provided", async () => {
-    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+    generateJourneyWithEgovAI.mockResolvedValue(AI_GENERATED);
 
     const result = await getOrRegenerateCustomJourney({
       text: "I got accepted as a PH rep for a tournament in the US",
@@ -147,7 +197,7 @@ describe("getOrRegenerateCustomJourney", () => {
   });
 
   it("stores the AI-generated title as the journey's life_event label", async () => {
-    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+    generateJourneyWithEgovAI.mockResolvedValue(AI_GENERATED);
 
     const result = await getOrRegenerateCustomJourney({
       text: "I got accepted as a PH rep for a tournament in the US",
@@ -158,7 +208,7 @@ describe("getOrRegenerateCustomJourney", () => {
   });
 
   it("falls back to the truncated raw text when the AI omits a title", async () => {
-    generateJourneyWithOpenAI.mockResolvedValue({ ...AI_GENERATED, title: "" });
+    generateJourneyWithEgovAI.mockResolvedValue({ ...AI_GENERATED, title: "" });
 
     const result = await getOrRegenerateCustomJourney({ text: "I am adopting a rescue dog" });
 
@@ -166,7 +216,7 @@ describe("getOrRegenerateCustomJourney", () => {
   });
 
   it("derives the journey id by hashing the raw text when no slug is given", async () => {
-    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+    generateJourneyWithEgovAI.mockResolvedValue(AI_GENERATED);
 
     const result = await getOrRegenerateCustomJourney({ text: "I am adopting a rescue dog" });
 
@@ -175,20 +225,20 @@ describe("getOrRegenerateCustomJourney", () => {
   });
 
   it("passes the citizen's held IDs through to generation", async () => {
-    generateJourneyWithOpenAI.mockResolvedValue(AI_GENERATED);
+    generateJourneyWithEgovAI.mockResolvedValue(AI_GENERATED);
 
     await getOrRegenerateCustomJourney({
       text: "I am adopting a rescue dog",
       heldIds: ["umid"],
     });
 
-    expect(generateJourneyWithOpenAI).toHaveBeenCalledWith(
+    expect(generateJourneyWithEgovAI).toHaveBeenCalledWith(
       expect.objectContaining({ heldIds: ["umid"] }),
     );
   });
 
   it("surfaces the AI's evidence decision onto the result", async () => {
-    generateJourneyWithOpenAI.mockResolvedValue({
+    generateJourneyWithEgovAI.mockResolvedValue({
       ...AI_GENERATED,
       requires_evidence: true,
       evidence_title: "Attach proof of adoption",
@@ -203,7 +253,7 @@ describe("getOrRegenerateCustomJourney", () => {
   });
 
   it("returns an empty fallback journey (not a throw) when generation fails", async () => {
-    generateJourneyWithOpenAI.mockRejectedValue(new Error("OpenAI error"));
+    generateJourneyWithEgovAI.mockRejectedValue(new Error("eGov AI error"));
 
     const result = await getOrRegenerateCustomJourney({
       text: "I am adopting a rescue dog",

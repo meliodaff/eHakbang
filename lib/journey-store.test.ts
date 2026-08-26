@@ -10,6 +10,7 @@ import {
   markStepsDone,
   markStepsPaid,
   resetJourney,
+  startJourney,
 } from "./journey-store";
 
 const KEY = "ehakbang:journeys";
@@ -25,6 +26,18 @@ describe("journey-store persistence", () => {
 
   it("starts with an empty store (clean slate)", () => {
     expect(getAllJourneys()).toEqual([]);
+  });
+
+  it("replaces an existing empty journey only when repair is explicitly requested", () => {
+    const catalog = EVENT_JOURNEYS["started-a-business"];
+    const empty = { ...catalog, steps: [], total_steps: 0 };
+    window.localStorage.setItem(KEY, JSON.stringify([empty]));
+
+    expect(startJourney(catalog).steps).toHaveLength(0);
+
+    const repaired = startJourney(catalog, { replaceExisting: true });
+    expect(repaired.steps).toHaveLength(catalog.steps.length);
+    expect(getStoredJourney(catalog.id)?.steps).toHaveLength(catalog.steps.length);
   });
 
   it("saves the journey to localStorage when one step is marked done", () => {

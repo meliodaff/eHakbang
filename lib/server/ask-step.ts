@@ -3,9 +3,8 @@ import OpenAI from "openai";
 import type { Language } from "@/lib/types";
 
 /**
- * Answers a citizen's free-text question about a single journey step, using
- * OpenAI (matching lib/server/openai-journey.ts's client/env-var conventions).
- * Unlike journey generation, this needs no web search or structured JSON --
+ * Answers a citizen's free-text question about a single journey step using
+ * OpenAI. Unlike journey generation, this needs no web search or structured JSON --
  * just a short, plain-text, step-scoped answer -- so it uses the simplest
  * correct call and a lighter/faster model by default.
  */

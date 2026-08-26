@@ -152,6 +152,36 @@ describe("JourneyScreen", () => {
     vi.useRealTimers();
   });
 
+  it("repairs a persisted empty journey instead of rendering a blank checklist", async () => {
+    const catalog = getJourneyByEventId("started-a-business")!;
+    localStorage.setItem(
+      "ehakbang:journeys",
+      JSON.stringify([{ ...catalog, steps: [], total_steps: 0 }]),
+    );
+
+    render(<JourneyScreen eventId="started-a-business" initialJourney={catalog} />);
+    await act(async () => {});
+
+    expect(screen.getByText("Register your business name")).toBeInTheDocument();
+    const stored = JSON.parse(localStorage.getItem("ehakbang:journeys") ?? "[]");
+    expect(stored[0].steps).toHaveLength(catalog.steps.length);
+  });
+
+  it("shows a recovery state instead of blank whitespace for a zero-step journey", async () => {
+    const catalog = getJourneyByEventId("started-a-business")!;
+    render(
+      <JourneyScreen
+        eventId="started-a-business"
+        initialJourney={{ ...catalog, steps: [], total_steps: 0 }}
+      />,
+    );
+    await act(async () => {});
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No checklist steps are available",
+    );
+  });
+
   it("goes to the celebration screen once the married journey is fully complete", async () => {
     seedIdWallet();
     render(<JourneyScreen eventId="got-married" />);

@@ -60,6 +60,14 @@ export function JourneyView({
       <ProgressBar completed={completed.length} total={journey.total_steps} />
 
       <div className="flex flex-col gap-3 px-5 py-4">
+        {journey.steps.length === 0 && (
+          <div
+            role="status"
+            className="rounded-egov border border-border bg-egov-warning-bg px-4 py-3 text-sm text-egov-warning"
+          >
+            No checklist steps are available. Go back and start this journey again.
+          </div>
+        )}
         {journey.steps.map((step) => (
           <StepCard
             key={step.step_number}

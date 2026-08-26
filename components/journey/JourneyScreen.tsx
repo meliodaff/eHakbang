@@ -23,6 +23,7 @@ import { useIdWallet, stepFulfilledByWallet, setId } from "@/lib/id-wallet";
 import { getPrerequisiteState, type PrerequisiteState } from "@/lib/journey-prerequisites";
 import { isStepNotApplicable } from "@/lib/journey-record-update-gate";
 import { eventSupportsApplyAll } from "@/lib/journey-features";
+import { hasUsableJourneySteps } from "@/lib/journey-validity";
 import { useT } from "@/lib/i18n";
 import { JourneyView } from "./JourneyView";
 import { ApplyAllPrompt } from "./ApplyAllPrompt";
@@ -67,7 +68,10 @@ export function JourneyScreen({
         // Persists to localStorage + Supabase the moment the journey is
         // started (preset card or flexible AI text), not only once a step
         // is completed.
-        base = getStoredJourney(initialJourney.id) ?? startJourney(initialJourney);
+        const storedJourney = getStoredJourney(initialJourney.id);
+        base = hasUsableJourneySteps(storedJourney)
+          ? storedJourney
+          : startJourney(initialJourney, { replaceExisting: true });
       } else if (eventId && EVENT_JOURNEYS[eventId]) {
         const catalog = EVENT_JOURNEYS[eventId];
         base = getStoredJourney(catalog.id) ?? startJourney({ ...catalog });

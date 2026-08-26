@@ -4,18 +4,19 @@ import { getLifeEventById } from "@/lib/events";
 import { getJourneyByEventId } from "@/lib/event-journeys";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  generateJourneyWithOpenAI,
+  generateJourneyWithEgovAI,
   inferFulfillsId,
   inferPrerequisite,
   type GeneratedJourney,
-} from "./openai-journey";
+} from "./egov-ai-journey";
 import { customEventId } from "@/lib/custom-event";
 import { inferEligibility } from "@/lib/journey-eligibility";
+import { hasUsableJourneySteps } from "@/lib/journey-validity";
 
 /**
  * Cache-or-regenerate layer for AI-generated journey requirements. Staleness
  * is checked lazily on read (no cron): a cached row older than 24h triggers a
- * regeneration; anything else (missing config, OpenAI/Supabase errors) falls
+ * regeneration; anything else (missing config, eGov AI/Supabase errors) falls
  * back to the hand-written seed in `lib/event-journeys.ts` (preset events) or
  * a minimal empty journey (custom/free-text events, which have no seed) so
  * the app keeps working without any keys configured.
@@ -149,7 +150,10 @@ interface GenerateParams {
 async function generateFresh(params: GenerateParams): Promise<JourneyResult> {
   const { eventId, lifeEvent, emoji, lifeEventLabel, language, heldIds, onFailure } = params;
   try {
-    const generated = await generateJourneyWithOpenAI({ eventId, lifeEvent, language, heldIds });
+    const generated = await generateJourneyWithEgovAI({ eventId, lifeEvent, language, heldIds });
+    if (generated.steps.length === 0) {
+      throw new Error("eGov AI returned no usable journey steps");
+    }
     const steps: JourneyStep[] = decorateSteps(
       generated.steps.map((step, i) => ({ ...step, step_number: i + 1 })),
     );
@@ -185,7 +189,7 @@ async function generateFresh(params: GenerateParams): Promise<JourneyResult> {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : JSON.stringify(err);
-    console.error(`generateFresh(${eventId}) failed, using fallback: ${message}`);
+    console.warn(`generateFresh(${eventId}) failed, using fallback: ${message}`);
     return onFailure();
   }
 }
@@ -214,7 +218,7 @@ export async function getOrRegenerateJourney(input: {
 
     if (existing) {
       const age = Date.now() - new Date(existing.updated_at).getTime();
-      if (age < STALE_AFTER_MS) {
+      if (age < STALE_AFTER_MS && hasUsableJourneySteps(existing)) {
         return {
           journey: rowToJourney(existing, language),
           regenerated: false,
@@ -246,7 +250,7 @@ export async function getOrRegenerateJourney(input: {
         total_steps: result.journey.total_steps,
         record_updates: result.journey.record_updates,
         benefit_claims: result.journey.benefit_claims,
-        model: "gpt-4.1",
+        model: "egov-ai-assistant",
         updated_at: new Date().toISOString(),
       };
       await supabase
@@ -258,7 +262,7 @@ export async function getOrRegenerateJourney(input: {
   } catch (err) {
     // Supabase not configured or unreachable — generate directly, no cache.
     const message = err instanceof Error ? err.message : JSON.stringify(err);
-    console.error(`getOrRegenerateJourney(${input.eventId}) cache layer failed: ${message}`);
+    console.warn(`getOrRegenerateJourney(${input.eventId}) cache layer failed: ${message}`);
     return generateFresh({
       eventId: input.eventId,
       lifeEvent: event.description,

@@ -8,7 +8,7 @@ import type { IdType, JourneyStep } from "./types";
  * -- there's no existing SSS record to update if they've never registered.
  *
  * Steps that *obtain* a new ID are tagged `fulfills_id` (see
- * `inferFulfillsId` in `lib/server/openai-journey.ts`) and are never gated
+ * `inferFulfillsId` in `lib/server/egov-ai-journey.ts`) and are never gated
  * here -- the two concepts are mutually exclusive by construction: a step
  * either grants an ID, or (if it touches one of these agencies without
  * granting it) presupposes the citizen already has one.

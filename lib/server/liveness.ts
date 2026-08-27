@@ -11,13 +11,20 @@ interface LivenessConfig {
 }
 
 function getConfig(): LivenessConfig {
-  const baseUrl = process.env.EGOV_LIVENESS_BASE_URL;
+  const rawBaseUrl = process.env.EGOV_LIVENESS_BASE_URL;
   const apiKey = process.env.EGOV_LIVENESS_API_KEY;
-  if (!baseUrl || !apiKey) {
+  if (!rawBaseUrl || !apiKey) {
     throw new Error(
       "Liveness API is not configured (EGOV_LIVENESS_BASE_URL / EGOV_LIVENESS_API_KEY)",
     );
   }
+
+  const baseUrl = rawBaseUrl.trim().replace(/\/+$/, "");
+  const parsedBaseUrl = new URL(baseUrl);
+  if (parsedBaseUrl.protocol !== "https:" && process.env.NODE_ENV === "production") {
+    throw new Error("EGOV_LIVENESS_BASE_URL must use HTTPS in production");
+  }
+
   return { baseUrl, apiKey };
 }
 

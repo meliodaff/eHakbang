@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
     // Stored custom content may have passed through the browser. Never trust
     // its fee values: clear them, then reapply only deterministic official
-    // fees recognized by the server (currently DFA passport processing).
+    // fees recognized by the server-side registry.
     journey = {
       ...stored,
       steps: enrichOfficialFees(stored.steps.map((step) => ({ ...step, fee: null }))),
@@ -95,6 +95,12 @@ export async function POST(request: NextRequest) {
   if (matched.length !== requested.size) {
     const matchedNumbers = new Set(matched.map((m) => m.stepNumber));
     const unbillable = body.stepNumbers.filter((n) => !matchedNumbers.has(n));
+    console.warn("[api/payment] requested steps are not in the trusted fee registry", {
+      eventId: body.eventId,
+      requestedStepNumbers: body.stepNumbers,
+      matchedStepNumbers: [...matchedNumbers],
+      unbillableStepNumbers: unbillable,
+    });
     return NextResponse.json(
       { error: "One or more requested steps are not billable", stepNumbers: unbillable },
       { status: 400 },

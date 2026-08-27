@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getFeeBill } from "./journey-fees";
 import {
   DFA_PASSPORT_FEE_SOURCE,
+  PSA_BIRTH_CERTIFICATE_FEE_SOURCE,
   enrichOfficialFees,
 } from "./journey-fee-enrichment";
 import type { JourneyStep } from "./types";
@@ -51,6 +52,50 @@ describe("enrichOfficialFees", () => {
     };
 
     expect(enrichOfficialFees([step({ fee: existing })])[0].fee).toBe(existing);
+  });
+
+  it("adds the verified PSA birth-certificate delivery fee and makes it payable", () => {
+    const [birthCertificate] = enrichOfficialFees([
+      step({
+        agency_name: "Philippine Statistics Authority",
+        agency_code: "PSA",
+        step_title: "Request Birth Certificate",
+        egov_service_name: "PSA Birth Certificate",
+        egov_search_term: "PSA birth certificate online",
+      }),
+    ]);
+
+    expect(birthCertificate.fee).toEqual({
+      amount: "₱365",
+      currency: "PHP",
+      how_to_pay: expect.stringContaining("document, service, and courier fees"),
+      official_source_url: PSA_BIRTH_CERTIFICATE_FEE_SOURCE,
+    });
+    expect(getFeeBill([birthCertificate]).payable).toEqual([
+      expect.objectContaining({ stepNumber: 1, amount: 365, currency: "PHP" }),
+    ]);
+  });
+
+  it("does not price PSA registration or birth-certificate correction as a copy order", () => {
+    const registration = step({
+      agency_name: "Philippine Statistics Authority",
+      agency_code: "PSA",
+      step_title: "Register a birth",
+      egov_service_name: "Civil registration",
+      egov_search_term: "PSA birth registration",
+    });
+    const correction = step({
+      agency_name: "Philippine Statistics Authority",
+      agency_code: "PSA",
+      step_title: "Correct an entry on a birth certificate",
+      egov_service_name: "Birth Certificate Correction",
+      egov_search_term: "PSA birth certificate amendment",
+    });
+
+    expect(enrichOfficialFees([registration, correction]).map((item) => item.fee)).toEqual([
+      null,
+      null,
+    ]);
   });
 
   it("does not add fees to non-passport DFA services or non-DFA passport text", () => {

@@ -71,14 +71,14 @@ function customJourney(overrides: Partial<Journey["steps"][number]> = {}): Journ
   };
 }
 
-function request(): NextRequest {
+function request(stepNumbers: number[] = [1]): NextRequest {
   return new NextRequest("http://localhost:3000/api/payment", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       eventId: "custom:passport",
       language: "en",
-      stepNumbers: [1],
+      stepNumbers,
       livenessToken: "verified-token",
     }),
   });
@@ -115,6 +115,67 @@ describe("POST /api/payment custom journey", () => {
       expect.objectContaining({
         amount: 950,
         items: [
+          {
+            name: "Department of Foreign Affairs — Apply for a Philippine passport",
+            amount: 950,
+          },
+        ],
+      }),
+    );
+  });
+
+  it("re-derives PSA birth-certificate and DFA passport fees for one payment", async () => {
+    const passportJourney = customJourney();
+    mocks.getStoredJourneyForEvent.mockResolvedValue({
+      ...passportJourney,
+      total_steps: 2,
+      steps: [
+        {
+          ...passportJourney.steps[0],
+          step_number: 1,
+          agency_name: "Philippine Statistics Authority",
+          agency_code: "PSA",
+          step_title: "Request Birth Certificate",
+          egov_service_name: "PSA Birth Certificate",
+          egov_search_term: "PSA birth certificate online",
+          fee: {
+            amount: "1",
+            currency: "PHP",
+            how_to_pay: "Untrusted client value",
+            official_source_url: "https://example.test/untrusted",
+          },
+        },
+        {
+          ...passportJourney.steps[0],
+          step_number: 2,
+          fee: {
+            amount: "1",
+            currency: "PHP",
+            how_to_pay: "Untrusted client value",
+          },
+        },
+      ],
+    });
+
+    const response = await POST(request([1, 2]));
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body).toEqual(
+      expect.objectContaining({
+        amount: 1315,
+        currency: "PHP",
+        stepNumbers: [1, 2],
+      }),
+    );
+    expect(mocks.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 1315,
+        items: [
+          {
+            name: "Philippine Statistics Authority — Request Birth Certificate",
+            amount: 365,
+          },
           {
             name: "Department of Foreign Affairs — Apply for a Philippine passport",
             amount: 950,

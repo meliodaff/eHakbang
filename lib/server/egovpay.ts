@@ -1,5 +1,5 @@
 import "server-only";
-import { createHmac, randomUUID } from "crypto";
+import { createHash, createHmac, randomUUID } from "crypto";
 
 /**
  * Server-only client for the eGovPay payment gateway (see eGovPay-apidoc.md).
@@ -15,36 +15,82 @@ interface EgovPayConfig {
 
 let cachedConfig: EgovPayConfig | null = null;
 
+function cleanEnvValue(raw: string): string {
+  const trimmed = raw.trim();
+  const quote = trimmed[0];
+  if (
+    trimmed.length >= 2 &&
+    (quote === '"' || quote === "'") &&
+    trimmed.at(-1) === quote
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
 /**
  * eGovPay expects the API token in the `X-eGovPay-Token` header WITH its
  * environment prefix (e.g. `test_<key>` for sandbox); `computeDigest()` then
- * strips that prefix to recover the HMAC key. A recurring setup mistake is
- * storing only the bare key with no prefix, which the gateway rejects with
- * `401 invalid_api_header`. To be resilient: if the configured token has no
- * `<env>_` prefix at all, assume a sandbox token and add `test_`. A token that
- * already carries a prefix (`test_...`, and by extension a live `..._` form) is
- * left untouched, so going live only requires storing the real prefixed token.
+ * strips that prefix to recover the HMAC key. If the configured token is the
+ * bare portal key, add `test_`. Also repair common secret-manager copy/paste
+ * issues (outer quotes/whitespace, uppercase or duplicated test prefixes).
  */
 function normalizeEgovPayToken(raw: string): string {
-  if (/^[a-z]+_/.test(raw)) return raw;
+  const cleaned = cleanEnvValue(raw);
+  if (!cleaned || /[<>]/.test(cleaned)) {
+    throw new Error("EGOVPAY_API_TOKEN is empty or contains placeholder brackets");
+  }
+  if (/\s/.test(cleaned)) {
+    throw new Error("EGOVPAY_API_TOKEN contains whitespace");
+  }
+
+  if (/^(?:test_)+/i.test(cleaned)) {
+    return `test_${cleaned.replace(/^(?:test_)+/i, "")}`;
+  }
+  if (/^[a-z]+_/i.test(cleaned)) return cleaned;
+
   console.warn(
     "[egovpay] EGOVPAY_API_TOKEN has no environment prefix; assuming sandbox and using `test_` prefix for the X-eGovPay-Token header.",
   );
-  return `test_${raw}`;
+  return `test_${cleaned}`;
 }
 
 function getConfig(): EgovPayConfig {
   if (cachedConfig) return cachedConfig;
-  const baseUrl = process.env.EGOVPAY_BASE_URL;
-  const token = process.env.EGOVPAY_API_TOKEN;
-  const settlementTemplateUuid = process.env.EGOVPAY_SETTLEMENT_TEMPLATE_UUID;
-  if (!baseUrl || !token || !settlementTemplateUuid) {
+  const rawBaseUrl = process.env.EGOVPAY_BASE_URL;
+  const rawToken = process.env.EGOVPAY_API_TOKEN;
+  const rawSettlementTemplateUuid = process.env.EGOVPAY_SETTLEMENT_TEMPLATE_UUID;
+  if (!rawBaseUrl || !rawToken || !rawSettlementTemplateUuid) {
     throw new Error(
       "eGovPay is not configured (EGOVPAY_BASE_URL / EGOVPAY_API_TOKEN / EGOVPAY_SETTLEMENT_TEMPLATE_UUID)",
     );
   }
-  cachedConfig = { baseUrl, token: normalizeEgovPayToken(token), settlementTemplateUuid };
+
+  const baseUrl = cleanEnvValue(rawBaseUrl).replace(/\/+$/, "");
+  const parsedBaseUrl = new URL(baseUrl);
+  if (parsedBaseUrl.protocol !== "https:" && process.env.NODE_ENV === "production") {
+    throw new Error("EGOVPAY_BASE_URL must use HTTPS in production");
+  }
+
+  const token = normalizeEgovPayToken(rawToken);
+  const settlementTemplateUuid = cleanEnvValue(rawSettlementTemplateUuid);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(settlementTemplateUuid)) {
+    throw new Error("EGOVPAY_SETTLEMENT_TEMPLATE_UUID is not a valid UUID");
+  }
+
+  cachedConfig = { baseUrl, token, settlementTemplateUuid };
   return cachedConfig;
+}
+
+function authenticationMetadata(config: EgovPayConfig) {
+  const parsedBaseUrl = new URL(config.baseUrl);
+  return {
+    baseOrigin: parsedBaseUrl.origin,
+    basePath: parsedBaseUrl.pathname,
+    tokenMode: config.token.startsWith("test_") ? "test" : "non-test",
+    tokenLength: config.token.length,
+    tokenFingerprint: createHash("sha256").update(config.token).digest("hex").slice(0, 12),
+  };
 }
 
 export function isEgovPayConfigured(): boolean {
@@ -107,6 +153,7 @@ async function egovPayFetch(
     method: init.method,
     headers: {
       "X-eGovPay-Token": token,
+      Accept: "application/json",
       "Content-Type": "application/json; charset=utf-8",
     },
     body: init.body ? JSON.stringify(init.body) : undefined,
@@ -116,9 +163,9 @@ async function egovPayFetch(
 export async function createTransaction(
   input: CreateTransactionInput,
 ): Promise<EgovPayTransaction> {
-  const { token, settlementTemplateUuid } = getConfig();
+  const config = getConfig();
   const amountStr = String(input.amount);
-  const digest = computeDigest(amountStr, input.txnid, token);
+  const digest = computeDigest(amountStr, input.txnid, config.token);
 
   let response: Response;
   try {
@@ -127,7 +174,7 @@ export async function createTransaction(
       body: {
         items: input.items,
         amount: input.amount,
-        settlement_template_uuid: settlementTemplateUuid,
+        settlement_template_uuid: config.settlementTemplateUuid,
         redirect_url: input.redirectUrl,
         txnid: input.txnid,
         callback_url: input.callbackUrl,
@@ -149,6 +196,12 @@ export async function createTransaction(
   if (!response.ok) {
     const text = await response.text();
     console.error(`[egovpay] createTransaction non-2xx response (${response.status}):`, text);
+    if (response.status === 401) {
+      console.error(
+        "[egovpay] authentication rejected; compare this metadata with the intended Production credential",
+        authenticationMetadata(config),
+      );
+    }
     throw new Error(`eGovPay createTransaction failed (${response.status}): ${text}`);
   }
 

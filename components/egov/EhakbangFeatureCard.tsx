@@ -14,7 +14,7 @@ export function EhakbangFeatureCard() {
     >
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-sm font-extrabold tracking-tight text-egov-blue">
-          eHakban
+          eHakbang
           <span className="rounded bg-egov-yellow px-1 py-0.5 text-[9px] font-bold leading-none text-egov-navy">
             AI
           </span>

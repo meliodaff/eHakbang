@@ -118,14 +118,14 @@ export function EhakbangActiveSection() {
 
       {/* Stats Section */}
       <div className="mt-4 px-5">
-        <div className="flex items-center justify-between rounded-egov border border-border bg-surface p-4 shadow-sm">
+        <div className="flex items-center justify-between rounded-egov border border-border bg-surface py-4 px-2 shadow-sm">
           {/* Column 1: Active Journeys */}
-          <Link href="/journeys" className="flex flex-1 items-center justify-center gap-3">
-            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-egov-blue-050 text-egov-blue [&>svg]:h-5 [&>svg]:w-5">
+          <Link href="/journeys" className="flex flex-1 items-center justify-center gap-2">
+            <span aria-hidden className="flex md:h-9 md:w-9 h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-egov-blue-050 text-egov-blue md:[&>svg]:h-5 md:[&>svg]:w-5 [&>svg]:h-4 [&>svg]:w-4">
               <ListIcon />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground leading-tight">
+              <p className="text-sm font-semibold text-foreground leading-tight line-clamp-1">
                 {activeCount} Active
               </p>
               <p className="text-[10px] text-muted leading-tight font-medium">
@@ -135,11 +135,11 @@ export function EhakbangActiveSection() {
           </Link>
 
           {/* Divider */}
-          <div className="h-8 w-px bg-border shrink-0" />
+          {/* <div className="h-8 w-px bg-border shrink-0" /> */}
 
           {/* Column 2: Record Updates */}
-          <div className="flex flex-1 items-center justify-center gap-3">
-            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+          <div className="flex flex-1 items-center justify-center gap-2">
+            <span aria-hidden className="flex md:h-9 md:w-9 h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600 md:[&>svg]:h-5 md:[&>svg]:w-5 [&>svg]:h-4 [&>svg]:w-4">
               <DocIcon />
             </span>
             <div className="min-w-0">
@@ -153,11 +153,11 @@ export function EhakbangActiveSection() {
           </div>
 
           {/* Divider */}
-          <div className="h-8 w-px bg-border shrink-0" />
+          {/* <div className="h-8 w-px bg-border shrink-0" /> */}
 
           {/* Column 3: Benefit Claims */}
-          <Link href="/journeys" className="flex flex-1 items-center justify-center gap-3">
-            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+          <Link href="/journeys" className="flex flex-1 items-center justify-center gap-2">
+            <span aria-hidden className="flex md:h-9 md:w-9 h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 md:[&>svg]:h-5 md:[&>svg]:w-5 [&>svg]:h-4 [&>svg]:w-4">
               <HeartIcon />
             </span>
             <div className="min-w-0">

@@ -142,7 +142,7 @@ export function SearchInput() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Ilarawan ang sitwasyon… (hal. Bagong kasal)"
-          className="w-full rounded-egov border border-border bg-surface py-3.5 pl-4 pr-11 text-base text-foreground shadow-sm placeholder:text-muted focus-visible:border-egov-blue focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-egov-blue"
+          className="w-full rounded-egov border border-border bg-surface py-3.5 pl-4 pr-11 md:text-base text-sm text-foreground shadow-sm placeholder:text-muted focus-visible:border-egov-blue focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-egov-blue"
         />
       </div>
 

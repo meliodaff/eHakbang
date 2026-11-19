@@ -29,16 +29,16 @@ export function JourneyListItem({ journey }: { journey: Journey }) {
         <p className="truncate font-semibold text-foreground">
           {journey.life_event}
         </p>
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1 flex flex-col-reverse gap-2">
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-semibold",
+              "rounded-full px-2 py-0.5 text-xs w-fit font-semibold",
               isActive
                 ? "bg-egov-blue-050 text-egov-blue"
                 : "bg-egov-success-bg text-egov-success",
             )}
           >
-            {isActive ? "In Progress" : "Complete"}
+            {isActive ? "In Progress" : "Completed"}
           </span>
           <span className="text-xs text-muted">{dateLabel}</span>
         </div>

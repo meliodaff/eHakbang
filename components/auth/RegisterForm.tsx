@@ -62,6 +62,7 @@ export function RegisterForm({
           type="text"
           required
           autoComplete="name"
+          placeholder="e.g Juan Dela Cruz"
           defaultValue={defaultFullName}
           readOnly={completingOAuth}
           className={completingOAuth ? lockedInputCls : inputCls}
@@ -79,6 +80,7 @@ export function RegisterForm({
           type="email"
           required
           autoComplete="email"
+          placeholder="e.g juandelacruz@gmail.com"
           defaultValue={defaultEmail}
           readOnly={completingOAuth}
           className={completingOAuth ? lockedInputCls : inputCls}
@@ -96,7 +98,7 @@ export function RegisterForm({
           type="tel"
           required
           autoComplete="tel"
-          placeholder="09171234567"
+          placeholder="09********1"
           className={inputCls}
         />
         <FieldErrorList errors={state?.errors?.phone} />
@@ -112,6 +114,7 @@ export function RegisterForm({
               id="password"
               name="password"
               type="password"
+              placeholder="Enter your Password"
               required
               autoComplete="new-password"
               className={inputCls}
@@ -127,6 +130,7 @@ export function RegisterForm({
               id="confirmPassword"
               name="confirmPassword"
               type="password"
+              placeholder="Confirm your Password"
               required
               autoComplete="new-password"
               className={inputCls}
@@ -138,15 +142,15 @@ export function RegisterForm({
         </>
       )}
 
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-2 ">
         <input
           id="termsAccepted"
           name="termsAccepted"
           type="checkbox"
           required
-          className="mt-0.5 h-5 w-5 shrink-0 accent-egov-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
-        />
-        <label htmlFor="termsAccepted" className="text-sm text-foreground">
+          className="mt-0.5 md:h-5 md:w-5 h-4 w-4 shrink-0 cursor-pointer accent-egov-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue"
+         />
+        <label htmlFor="termsAccepted" className="md:text-sm text-[13px] text-foreground">
           {t("I have read and agree to the")}{" "}
           <Link href="/terms" className="font-semibold text-egov-blue" target="_blank">
             {t("Terms and Conditions")}
@@ -162,7 +166,7 @@ export function RegisterForm({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-12 rounded-egov bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:opacity-60"
+        className="min-h-12 rounded-egov cursor-pointer bg-egov-blue px-5 py-3 font-semibold text-white transition-colors hover:bg-egov-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-egov-blue disabled:opacity-60"
       >
         {completingOAuth
           ? pending
